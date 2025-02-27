@@ -1,5 +1,7 @@
 import WeatherIcon from "./components/WeatherIcon";
-
+import ArcGauge from "./components/ArcGauge";
+import DirectionArrow from "./components/DirectionArrow";
+import VerticalBarIndicator from "./components/VerticalBarIndicator";
 const DUMMY_FORECAST = [
   { day: "Чт, 27 февр.", code: 2, minTemp: -16, maxTemp: -6 },
   { day: "Пт, 28 февр.", code: 3, minTemp: -14, maxTemp: -5 },
@@ -9,6 +11,29 @@ const DUMMY_FORECAST = [
   { day: "Чт, 4 марта", code: 2, minTemp: -11, maxTemp: -3 },
   { day: "Пт, 5 марта", code: 1, minTemp: -12, maxTemp: -4 },
 ];
+
+const WEATHER_DATA = {
+  humidity: 59, 
+  dewPoint: -15, 
+  pressure: 1012, 
+  uvIndex: 2, 
+};
+
+const getUVGradient = (uv) => {
+  if (uv <= 2) return ["#4ade80", "#1eae53"];
+  if (uv <= 5) return ["#facc15", "#c59507"];
+  if (uv <= 7) return ["#fa8938", "#ea580c"];
+  if (uv <= 10) return ["#e25050", "#c81e1e"];
+  return ["#976ef7", "#732deb"];
+};
+
+const getUVLevel = (uv) => {
+  if (uv <= 2) return "Низкий";
+  if (uv <= 5) return "Умеренный";
+  if (uv <= 7) return "Высокий";
+  if (uv <= 10) return "Очень высокий";
+  return "Экстремальный";
+};
 
 function App() {
   return (
@@ -65,22 +90,141 @@ function App() {
 
           {/* Сетка для параметров */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="relative bg-gradient-to-b from-slate-900 to-slate-800 shadow-lg rounded-xl border-t border-white/20 p-4 overflow-hidden h-30 flex items-start">
+            <div className="flex-col justify-between relative bg-gradient-to-b from-slate-900 to-slate-800 shadow-lg rounded-xl border-t border-white/20 p-4 overflow-hidden h-35 flex items-start">
               <div className="bg-grainy absolute left-0 top-0 z-10 h-full w-full rounded-xl opacity-10 pointer-events-none" />
-              <span className="text-sm text-gray-400">Влажность</span>
-              <span></span>
+              <div className="flex flex-row w-full h-full gap-2">
+                {/* Левая часть с текстом */}
+                <div className="flex flex-col justify-between">
+                  <span className="text-sm text-gray-400">Влажность</span>
+                  <span className="text-3xl font-semibold text-cyan-50">
+                    {WEATHER_DATA.humidity}
+                    <span className="text-base font-normal"> %</span>
+                  </span>
+                  <span className="text-sm text-gray-400">
+                    Точка росы {WEATHER_DATA.dewPoint}°C
+                  </span>
+                </div>
+
+                {/* Индикатор влажности */}
+                <div className="flex flex-1 justify-end">
+                  <div className="flex flex-col justify-between items-center w-8 h-full text-xs text-gray-400 gap-0.5 relative">
+                    <span>100</span>
+
+                  
+                    <VerticalBarIndicator value={WEATHER_DATA.humidity} height={100} />
+
+                    <span>0</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="relative bg-gradient-to-b from-slate-900 to-slate-800 shadow-lg rounded-xl border-t border-white/20 p-4 overflow-hidden h-30 flex items-start">
+
+            {/* Карточка давления */}
+            <div className="flex-col justify-between relative bg-gradient-to-b from-slate-900 to-slate-800 shadow-lg rounded-xl border-t border-white/20 p-4 overflow-hidden h-35 flex items-start">
               <div className="bg-grainy absolute left-0 top-0 z-10 h-full w-full rounded-xl opacity-10 pointer-events-none" />
-              <span className="font-semibold text-cyan-50">Давление</span>
+              <div className="flex flex-row w-full h-full gap-2">
+                {/* Левая часть с текстом */}
+                <div className="flex flex-col justify-between">
+                  <span className="text-sm text-gray-400">Давление</span>
+                  <span className="text-3xl font-semibold leading-[0.7] text-cyan-50">
+                    {WEATHER_DATA.pressure}{" "}
+                    <span className="text-base font-normal">мбар</span>
+                  </span>
+                  <span className="text-sm text-gray-400">Нормальное</span>
+                </div>
+
+                {/* Спидометр давления */}
+                <div className="flex flex-1 justify-end items-center">
+                  <ArcGauge
+                    value={WEATHER_DATA.pressure}
+                    minValue={950}
+                    maxValue={1050}
+                    size={75}
+                    width={10}
+                    arcAngle={240}
+                    backgroundColor="#4b5563"
+                    fillColor="#3b82f6"
+                    pointerColor="white"
+                    gradientFill={[
+                      { offset: "0%", color: "#3b82f6" },
+                      { offset: "100%", color: "#06b6d4" },
+                    ]}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="relative bg-gradient-to-b from-slate-900 to-slate-800 shadow-lg rounded-xl border-t border-white/20 p-4 overflow-hidden h-30 flex items-start">
+
+            {/* 🔹 Карточка УФ-индекса */}
+            <div className="flex-col justify-between relative bg-gradient-to-b from-slate-900 to-slate-800 shadow-lg rounded-xl border-t border-white/20 p-4 overflow-hidden h-35 flex items-start">
               <div className="bg-grainy absolute left-0 top-0 z-10 h-full w-full rounded-xl opacity-10 pointer-events-none" />
-              <span className="font-semibold text-cyan-50">УФ-индекс</span>
+              <div className="flex flex-row w-full h-full gap-2">
+                {/* Левая часть с текстом */}
+                <div className="flex flex-col justify-between">
+                  <span className="text-sm text-gray-400">УФ-индекс</span>
+                  <span className="text-3xl font-semibold text-cyan-50">
+                    {WEATHER_DATA.uvIndex}
+                  </span>
+                  <span className="text-sm text-gray-400">
+                    {getUVLevel(WEATHER_DATA.uvIndex)}
+                  </span>
+                </div>
+
+                {/* Спидометр скорости ветра */}
+                <div className="flex flex-1 justify-end items-center">
+                  <ArcGauge
+                    value={WEATHER_DATA.uvIndex}
+                    minValue={0}
+                    maxValue={11}
+                    size={75}
+                    width={10}
+                    arcAngle={240}
+                    backgroundColor="#4b5563"
+                    pointerColor="white"
+                    gradientFill={[
+                      {
+                        offset: "0%",
+                        color: getUVGradient(WEATHER_DATA.uvIndex)[0],
+                      },
+                      {
+                        offset: "100%",
+                        color: getUVGradient(WEATHER_DATA.uvIndex)[1],
+                      },
+                    ]}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="relative bg-gradient-to-b from-slate-900 to-slate-800 shadow-lg rounded-xl border-t border-white/20 p-4 overflow-hidden h-30 flex items-start">
+
+            <div className="flex-col justify-between relative bg-gradient-to-b from-slate-900 to-slate-800 shadow-lg rounded-xl border-t border-white/20 p-4 overflow-hidden h-35 flex items-start">
               <div className="bg-grainy absolute left-0 top-0 z-10 h-full w-full rounded-xl opacity-10 pointer-events-none" />
-              <span className="font-semibold text-cyan-50">Скорость ветра</span>
+              <div className="flex flex-row w-full h-full gap-2 justify-between">
+                {/* Левая часть с текстом */}
+                <div className="flex flex-col justify-between">
+                  <span className="text-sm text-gray-400">Скорость ветра</span>
+                  <span className="text-3xl font-semibold text-cyan-50">
+                  4 <span className="text-base font-normal">м/с</span>
+                  </span>
+                  <span className="text-sm text-gray-400">
+                    Легкий • С СЗ
+                  </span>
+                </div>
+
+                {/* Спидометр УФ-индекса */}
+                <div className="flex flex-col text-xs text-gray-400 gap-0.5 justify-center items-center">
+                  <span>C</span>
+                  <DirectionArrow
+                    size={75}
+                    color="#facc15"
+                    angle={-22.5}
+                    className="rounded-full"
+                    gradientFill={[
+                      { offset: "0%", color: "#f6c309" },
+                      { offset: "100%", color: "#f9e085" },
+                    ]}
+                  />
+                  <span>Ю</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -103,7 +247,6 @@ function App() {
                 <span className="text-sm text-cyan-50">{day.day}</span>
 
                 <div className="relative flex items-center gap-4">
-            
                   <div className="absolute right-0 mr-26 flex items-center justify-center min-w-12">
                     <WeatherIcon
                       className="w-10 h-10 object-contain"
