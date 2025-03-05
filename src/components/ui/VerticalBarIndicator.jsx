@@ -10,9 +10,8 @@ const VerticalBarIndicator = ({
   pointerColor = "#e3e3e3",
   gradientFill = ["#52eafd", "#2b7fff"],
   bgGradientFill = ["#ecfeff", "#a2f3fd"],
-  transitionDuration = 1000,
+  transitionDuration = 800,
 }) => {
-
   const clampedValue = Math.max(0, Math.min(100, value));
 
   // Анимированное значение
@@ -24,38 +23,40 @@ const VerticalBarIndicator = ({
 
   return (
     <div
-      className="relative w-full rounded-full border border-gray-600 "
+      className="relative w-full rounded-full select-none"
       style={{
         height: `${height}%`,
         background: `linear-gradient(to top, ${bgGradientFill.join(", ")})`,
       }}
     >
-      <div className="relative flex w-full h-full rounded-3xl overflow-hidden">
-      <div
-        className="absolute bottom-0 left-0 w-full transition-all ease-in-out "
-        style={{
-          height: `${animatedValue}%`,
-          background: `linear-gradient(to bottom right, ${gradientFill.join(", ")})`,
-          transitionDuration: `${transitionDuration}ms`,
-        }}
-      ></div>
+      <div className="relative flex h-full w-full overflow-hidden rounded-3xl">
+        <div
+          className="absolute bottom-0 left-0 w-full transition-all ease-in-out"
+          style={{
+            height: `${animatedValue}%`,
+            background: `linear-gradient(to bottom right, ${gradientFill.join(", ")})`,
+            transitionDuration: `${transitionDuration}ms`,
+          }}
+        ></div>
       </div>
-      
+
       <div
-        className="absolute w-3 h-3 flex items-center justify-center -translate-x-full translate-y-1/2 transition-all ease-in-out"
+        className="absolute flex h-3 w-3 -translate-x-full translate-y-1/2 items-center justify-center transition-all ease-in-out"
         style={{
           bottom: `${animatedValue}%`,
           color: pointerColor,
           transitionDuration: `${transitionDuration}ms`,
         }}
       >
-        <span className="material-symbols-rounded text-gray-400" style={{ fontSize: "14px" }}>
+        <span
+          className="material-symbols-rounded text-gray-400"
+          style={{ fontSize: "14px" }}
+        >
           play_arrow
         </span>
       </div>
     </div>
   );
-
 };
 
 // Валидация пропсов
@@ -67,6 +68,5 @@ VerticalBarIndicator.propTypes = {
   bgGradientFill: PropTypes.arrayOf(PropTypes.string), // Градиент фона
   transitionDuration: PropTypes.number, // Длительность анимации (мс)
 };
-
 
 export default VerticalBarIndicator;

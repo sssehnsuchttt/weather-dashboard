@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
+import { motion } from "framer-motion";
 
 /**
  * Функция, вычисляющая bounding box (minX, maxX, minY, maxY)
@@ -72,17 +73,12 @@ function ArcGauge({
   fillColor = "#3b82f6",
   gradientFill,
   pointerColor = "white",
-  transitionDuration = 1000,
+  transitionDuration = 800,
 }) {
-  if (value < minValue || value > maxValue) {
-    console.warn("⚠️ Значение `value` выходит за допустимый диапазон!");
-  }
-
-  // Для плавной анимации используем локальное состояние
   const [animatedValue, setAnimatedValue] = useState(minValue);
 
   useEffect(() => {
-    const timeout = setTimeout(() => setAnimatedValue(value), 200);
+    const timeout = setTimeout(() => setAnimatedValue(value), 100);
     return () => clearTimeout(timeout);
   }, [value]);
 
@@ -124,8 +120,8 @@ function ArcGauge({
   const backgroundPath = `
     M ${startX},${startY}
     A ${r},${r} 0 ${largeArcFlag(
-    arcAngle
-  )},${sweepFlag} ${endXBackground},${endYBackground}
+      arcAngle,
+    )},${sweepFlag} ${endXBackground},${endYBackground}
   `;
   // Для анимации залитой дуги используем тот же путь,
   // но будем управлять его видимой длиной через stroke-dashoffset.
@@ -135,18 +131,19 @@ function ArcGauge({
   const arcLen = arcLengthDeg(arcAngle, r);
 
   // Вычисляем bounding box дуги (для корректировки viewBox)
+  // eslint-disable-next-line no-unused-vars
   const { minX, maxX, minY, maxY } = getArcBoundingBox(
     cx,
     cy,
     r,
     startAngle,
     endAngle,
-    scaledWidth
+    scaledWidth,
   );
   const arcBottom = maxY;
 
   return (
-    <div className="flex relative">
+    <div className="relative flex">
       <svg
         viewBox={`0 0 100 ${arcBottom}`}
         width={size}
@@ -188,7 +185,9 @@ function ArcGauge({
           }}
         />
 
-        <g
+        {/* Изначальная реализация, пришлось заменить , так как Safari плохо поддерживает foreignObject и css анимации внутри svg */}
+
+        {/* <g
           transform={`translate(${cx}, ${cy}) rotate(${currentAngle}) translate(${r}, 0)`}
           style={{
             transition: `transform ${transitionDuration}ms ease-in-out`,
@@ -197,7 +196,14 @@ function ArcGauge({
           <circle cx={0} cy={0} r={scaledWidth / 2} fill={pointerColor} />
           <g transform=" rotate(180)">
             <foreignObject width="160" height="160" overflow="visible">
-              <div className="h-5 w-10 relative text-gray-400" style={{marginLeft: `${scaledWidth/2}px`, transform: `scale(${scaleFactor})`, transformOrigin: "top left"}}>
+              <div
+                className="h-5 w-10 relative text-gray-400"
+                style={{
+                  marginLeft: `${scaledWidth / 2}px`,
+                  transform: `scale(${scaleFactor})`,
+                  transformOrigin: "top left",
+                }}
+              >
                 <div
                   className="material-symbols-rounded absolute"
                   style={{
@@ -212,9 +218,31 @@ function ArcGauge({
               </div>
             </foreignObject>
           </g>
-        </g>
+        </g> */}
       </svg>
 
+      <motion.div
+        className="absolute right-0 flex w-1/2 origin-left items-center justify-end"
+        style={{ height: `${width}px` }}
+        initial={{
+          y: size / 2 - width / 2 + (((100 - arcBottom) / 100) * size) / 2,
+          rotate: startAngle,
+        }}
+        animate={{ rotate: currentAngle }}
+        transition={{ duration: transitionDuration / 1000, ease: "easeInOut" }}
+        viewport={{ once: true }}
+      >
+        <span
+          className="material-symbols-rounded flex h-fit text-gray-400 select-none"
+          style={{ fontSize: "14px" }}
+        >
+          play_arrow
+        </span>
+        <div
+          className="rounded-full"
+          style={{ height: width, width: width, backgroundColor: pointerColor }}
+        ></div>
+      </motion.div>
     </div>
   );
 }
@@ -232,7 +260,7 @@ ArcGauge.propTypes = {
     PropTypes.shape({
       offset: PropTypes.string.isRequired,
       color: PropTypes.string.isRequired,
-    })
+    }),
   ),
   pointerColor: PropTypes.string,
   transitionDuration: PropTypes.number,

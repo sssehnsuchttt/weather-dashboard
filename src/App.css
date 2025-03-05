@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+.bg-grainy::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url('/public/noise.svg');
+    background-repeat: repeat;
+    opacity: 0.1;
+    mix-blend-mode: normal;
+    border-radius: inherit;
+    pointer-events: none;
+    transition: opacity 0.5s ease-in-out;
+  }
+
+  .bg-grainy[data-active="true"]::before {
+    opacity: 0;
+}
+
+
+  .search-bar.open {
+    backdrop-filter: blur(0px);
+  }
+  
+  /* При закрытии — с задержкой */
+  .search-bar:not(.open) {
+    transition-delay: 300ms;
+  }

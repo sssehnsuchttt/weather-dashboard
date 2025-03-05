@@ -228,10 +228,10 @@ const WeatherIcon = ({ code, hour, className, glow = false }) => {
   const glowColor = iconData.glow[timeOfDay];
 
   return (
-    <div className="relative flex items-center justify-center">
+    <div className="relative flex items-center justify-center select-none">
       {glow && (
         <div
-          className="absolute w-28 h-28 blur-2xl"
+          className="absolute h-28 w-28 blur-2xl"
           style={{
             background: `radial-gradient(circle, ${glowColor} 0%, rgba(0,0,0,0) 70%)`,
           }}
