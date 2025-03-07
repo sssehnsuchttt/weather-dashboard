@@ -1,6 +1,8 @@
 import PropTypes from "prop-types";
 import classNames from "classnames";
 
+const basePath = import.meta.env.DEV ? "./public/" : import.meta.env.BASE_URL;
+
 const weatherIcons = {
   0: {
     day: "sunny",
@@ -239,7 +241,7 @@ const WeatherIcon = ({ code, hour, className, glow = false }) => {
       )}
 
       <img
-        src={`/src/assets/icons/${iconName}.svg`}
+        src={`${basePath}assets/icons/${iconName}.svg`}
         alt={iconName}
         className={classNames("relative", className)}
       />
