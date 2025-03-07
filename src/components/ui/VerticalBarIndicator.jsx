@@ -41,7 +41,7 @@ const VerticalBarIndicator = ({
       </div>
 
       <div
-        className="absolute flex h-3 w-3 -translate-x-full translate-y-1/2 items-center justify-center transition-all ease-in-out"
+        className="absolute flex h-3 w-3 -translate-x-full translate-y-1/2 items-center justify-center transition-[bottom] ease-in-out"
         style={{
           bottom: `${animatedValue}%`,
           color: pointerColor,
@@ -49,7 +49,7 @@ const VerticalBarIndicator = ({
         }}
       >
         <span
-          className="material-symbols-rounded text-gray-400"
+          className="material-symbols-rounded"
           style={{ fontSize: "14px" }}
         >
           play_arrow
@@ -59,14 +59,13 @@ const VerticalBarIndicator = ({
   );
 };
 
-// Валидация пропсов
 VerticalBarIndicator.propTypes = {
-  value: PropTypes.number.isRequired, // Значение (0-100)
-  height: PropTypes.number, // Высота индикатора
-  pointerColor: PropTypes.string, // Цвет указателя
-  gradientFill: PropTypes.arrayOf(PropTypes.string), // Градиент заполненной части
-  bgGradientFill: PropTypes.arrayOf(PropTypes.string), // Градиент фона
-  transitionDuration: PropTypes.number, // Длительность анимации (мс)
+  value: PropTypes.number.isRequired, 
+  height: PropTypes.number,
+  pointerColor: PropTypes.string, 
+  gradientFill: PropTypes.arrayOf(PropTypes.string), 
+  bgGradientFill: PropTypes.arrayOf(PropTypes.string),
+  transitionDuration: PropTypes.number, 
 };
 
 export default VerticalBarIndicator;

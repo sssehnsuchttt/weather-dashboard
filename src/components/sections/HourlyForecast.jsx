@@ -4,8 +4,11 @@ import { motion } from "framer-motion";
 import WeatherIcon from "../ui/WeatherIcon";
 import Skeleton from "react-loading-skeleton";
 import classNames from "classnames";
+import { formatTemperature } from "../../utils/unitSystem";
+import { useTranslation } from "react-i18next";
 
-const HourlyForecast = ({ data, isLoading }) => {
+const HourlyForecast = ({ data, isLoading, unitSystem }) => {
+  const { t } = useTranslation();
   const containerRef = useRef(null);
   const gap = 8;
   const itemMaxWidth = 60;
@@ -36,9 +39,9 @@ const HourlyForecast = ({ data, isLoading }) => {
   }, []);
 
   return (
-    <div className="bg-grainy relative flex h-50 flex-col overflow-hidden rounded-2xl border-t border-white/20 bg-gradient-to-b from-slate-900 to-slate-800 p-4 shadow-lg">
-      <h2 className="mb-2 text-sm text-gray-400">
-        {isLoading ? <Skeleton width={140} /> : "Прогноз на 24 часа"}
+    <div className="bg-grainy relative flex h-50 flex-col overflow-hidden rounded-2xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
+      <h2 className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+        {isLoading ? <Skeleton width={140} /> : t("hourly_forecast")}
       </h2>
 
       <div
@@ -61,17 +64,17 @@ const HourlyForecast = ({ data, isLoading }) => {
                       scrollSnapAlign: "start",
                     }}
                   >
-                    <span className="text-sm text-white">
+                    <span className="text-sm">
                       <Skeleton width={40} />
                     </span>
                     <Skeleton width={40} height={40} />
-                    <span className="text-sm text-gray-400">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
                       <Skeleton width={50} />
                     </span>
                   </div>
                   {i < 23 && (
                     <div className="flex h-full w-2 justify-center">
-                      <div className="flex h-full w-[1px] bg-gray-700"></div>
+                      <div className="flex h-full w-[1px] bg-gray-400 dark:bg-gray-700"></div>
                     </div>
                   )}
                 </div>
@@ -102,19 +105,21 @@ const HourlyForecast = ({ data, isLoading }) => {
                     }}
                     viewport={{ once: false, amount: 0.5 }}
                   >
-                    <span className="text-sm text-white">
-                      {hour.temperature}°C
+                    <span className="text-sm text-gray-950 dark:text-cyan-50">
+                      {formatTemperature(hour.temperature, unitSystem)}
                     </span>
                     <WeatherIcon
                       className="h-10 w-10 object-contain"
                       code={hour.iconCode}
                       hour={12}
                     />
-                    <span className="text-sm text-gray-400">{hour.time}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {hour.time}
+                    </span>
                   </motion.div>
                   {i < data.length - 1 && (
                     <div className="flex h-full w-2 justify-center">
-                      <div className="flex h-full w-[1px] bg-gray-700"></div>
+                      <div className="flex h-full w-[1px] bg-gray-400 dark:bg-gray-700"></div>
                     </div>
                   )}
                 </div>
@@ -134,6 +139,7 @@ HourlyForecast.propTypes = {
     }),
   ),
   isLoading: PropTypes.bool.isRequired,
+  unitSystem: PropTypes.string.isRequired,
 };
 
 export default HourlyForecast;

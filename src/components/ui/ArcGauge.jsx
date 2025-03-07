@@ -2,11 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
 import { motion } from "framer-motion";
 
-/**
- * Функция, вычисляющая bounding box (minX, maxX, minY, maxY)
- * для дуги от startAngle до endAngle с радиусом r и центром (cx, cy).
- * Учитывает "шапки" (linecap="round"), добавляя радиус capR = strokeWidth/2.
- */
+
 function getArcBoundingBox(cx, cy, r, startAngle, endAngle, strokeWidth) {
   let a1 = Math.min(startAngle, endAngle);
   let a2 = Math.max(startAngle, endAngle);
@@ -59,9 +55,6 @@ function arcLengthDeg(arcAngle, r) {
 const generateUniqueId = () =>
   `gradient-${Math.random().toString(36).substr(2, 9)}`;
 
-/**
- * Компонент ArcGauge — полукруглый индикатор (спидометр) с анимацией.
- */
 function ArcGauge({
   value,
   size = 70,
@@ -72,7 +65,7 @@ function ArcGauge({
   backgroundColor = "#4b5563",
   fillColor = "#3b82f6",
   gradientFill,
-  pointerColor = "white",
+  pointerColor = "#99a1af",
   transitionDuration = 800,
 }) {
   const [animatedValue, setAnimatedValue] = useState(minValue);
@@ -84,14 +77,13 @@ function ArcGauge({
 
   const gradientId = useMemo(() => generateUniqueId(), []);
 
-  // Рассчитываем долю заполненности шкалы
   let fraction = (animatedValue - minValue) / (maxValue - minValue);
   fraction = Math.max(0, Math.min(1, fraction));
 
   const scaleFactor = 100 / size;
   const scaledWidth = width * scaleFactor;
 
-  // Центр и радиус дуги (система координат: viewBox "0 0 100 ?")
+  // Центр и радиус дуги
   const cx = 50,
     cy = 50;
   const r = 50 - scaledWidth / 2;
@@ -116,18 +108,17 @@ function ArcGauge({
   // Флаг дуги
   const largeArcFlag = (angle) => (angle > 180 ? 1 : 0);
   const sweepFlag = 1;
-  // Путь для фоновой дуги (она всегда рисуется полностью)
+  // Путь для фоновой дуги
   const backgroundPath = `
     M ${startX},${startY}
     A ${r},${r} 0 ${largeArcFlag(
       arcAngle,
     )},${sweepFlag} ${endXBackground},${endYBackground}
   `;
-  // Для анимации залитой дуги используем тот же путь,
-  // но будем управлять его видимой длиной через stroke-dashoffset.
+
   const filledPath = backgroundPath;
 
-  // Вычисляем длину дуги для stroke-dasharray
+  // Вычисляем длину дуги
   const arcLen = arcLengthDeg(arcAngle, r);
 
   // Вычисляем bounding box дуги (для корректировки viewBox)
@@ -233,14 +224,14 @@ function ArcGauge({
         viewport={{ once: true }}
       >
         <span
-          className="material-symbols-rounded flex h-fit text-gray-400 select-none"
-          style={{ fontSize: "14px" }}
+          className="material-symbols-rounded flex h-fit select-none"
+          style={{ fontSize: "14px", color: pointerColor }}
         >
           play_arrow
         </span>
         <div
-          className="rounded-full"
-          style={{ height: width, width: width, backgroundColor: pointerColor }}
+          className="rounded-full bg-gradient-to-bl from-white to-gray-100"
+          style={{ height: width, width: width}}
         ></div>
       </motion.div>
     </div>

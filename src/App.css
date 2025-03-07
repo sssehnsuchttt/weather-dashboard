@@ -7,7 +7,7 @@
     inset: 0;
     background-image: url('/public/noise.svg');
     background-repeat: repeat;
-    opacity: 0.1;
+    opacity: 0.09;
     mix-blend-mode: normal;
     border-radius: inherit;
     pointer-events: none;
@@ -19,11 +19,4 @@
 }
 
 
-  .search-bar.open {
-    backdrop-filter: blur(0px);
-  }
-  
-  /* При закрытии — с задержкой */
-  .search-bar:not(.open) {
-    transition-delay: 300ms;
-  }
+

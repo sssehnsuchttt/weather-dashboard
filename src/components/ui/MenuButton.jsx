@@ -8,7 +8,7 @@ const MenuButton = ({ isOpen, toggle }) => {
       className="flex h-8 w-8 cursor-pointer items-center justify-center p-1 transition-all duration-100 ease-in-out active:scale-70"
     >
       <svg
-        className="h-full w-full stroke-gray-400"
+        className="h-full w-full dark:stroke-gray-400 stroke-gray-600"
         viewBox="0 0 24 24"
         fill="none"
         stroke="gray"

@@ -3,111 +3,121 @@ import VerticalBarIndicator from "../ui/VerticalBarIndicator";
 import ArcGauge from "../ui/ArcGauge";
 import DirectionArrow from "../ui/DirectionArrow";
 import Skeleton from "react-loading-skeleton";
+import { useTheme } from "next-themes";
+import { formatTemperature, formatPressure, formatWindSpeed } from "../../utils/unitSystem";
+import { useTranslation } from "react-i18next";
 
 const getUVGradient = (uv) => {
-  if (uv <= 2) return ["#4ade80", "#1eae53"];
-  if (uv <= 5) return ["#facc15", "#c59507"];
-  if (uv <= 7) return ["#fa8938", "#ea580c"];
-  if (uv <= 10) return ["#e25050", "#c81e1e"];
-  return ["#976ef7", "#732deb"];
+  if (uv <= 2) return ["#2b7fff", "#52eafd"];
+  if (uv <= 5) return ["#1eae53", "#4ade80"];
+  if (uv <= 7) return ["#f6c309", "#f9e085"]
+  if (uv <= 10) return ["#f06215", "#fa8938"];
+  return ["#c81e1e", "#e25050"];
 };
 
 const getUVLevel = (uv) => {
-  if (uv <= 2) return "Низкий";
-  if (uv <= 5) return "Умеренный";
-  if (uv <= 7) return "Высокий";
-  if (uv <= 10) return "Очень высокий";
-  return "Экстремальный";
+  if (uv <= 2) return "uv_low";
+  if (uv <= 5) return "uv_moderate";
+  if (uv <= 7) return "uv_high";
+  if (uv <= 10) return "uv_very_high";
+  return "uv_extreme";
 };
 
 const getPressureLevel = (pressure) => {
-  if (pressure < 970) return "Очень низкое";
-  if (pressure >= 970 && pressure < 990) return "Низкое";
-  if (pressure >= 990 && pressure < 1005) return "Сниженное";
-  if (pressure >= 1005 && pressure < 1020) return "Нормальное";
-  if (pressure >= 1020 && pressure < 1030) return "Повышенное";
-  if (pressure >= 1030 && pressure < 1040) return "Высокое";
-  if (pressure >= 1040) return "Очень высокое";
+  if (pressure < 965) return "pressure_very_low";
+  if (pressure >= 965 && pressure < 985) return "pressure_low";
+  if (pressure >= 985 && pressure < 1000) return "pressure_reduced";
+  if (pressure >= 1000 && pressure < 1015) return "pressure_normal";
+  if (pressure >= 1015 && pressure < 1030) return "pressure_increased";
+  if (pressure >= 1030) return "pressure_high";
 };
 
 const getWindLevel = (windSpeed) => {
-  if (windSpeed === 0) return "Штиль";
-  if (windSpeed >= 1 && windSpeed <= 2) return "Лёгкий";
-  if (windSpeed >= 3 && windSpeed <= 5) return "Слабый";
-  if (windSpeed >= 5 && windSpeed <= 7) return "Умеренный";
-  if (windSpeed >= 7 && windSpeed <= 15) return "Сильный";
-  if (windSpeed >= 15 && windSpeed <= 29) return "Шторм";
-  if (windSpeed >= 30) return "Ураган";
+  if (windSpeed === 0) return "wind_calm";
+  if (windSpeed >= 1 && windSpeed <= 2) return "wind_light";
+  if (windSpeed >= 3 && windSpeed <= 5) return "wind_weak";
+  if (windSpeed >= 5 && windSpeed <= 7) return "wind_moderate";
+  if (windSpeed >= 7 && windSpeed <= 15) return "wind_strong";
+  if (windSpeed >= 15 && windSpeed <= 29) return "wind_storm";
+  if (windSpeed >= 30) return "wind_hurricane";
 };
 
 const getWindDirection = (degrees) => {
-  if (degrees >= 348.75 || degrees < 11.25) return "С";
-  if (degrees >= 11.25 && degrees < 33.75) return "С СВ";
-  if (degrees >= 33.75 && degrees < 56.25) return "СВ";
-  if (degrees >= 56.25 && degrees < 78.75) return "В СВ";
-  if (degrees >= 78.75 && degrees < 101.25) return "В";
-  if (degrees >= 101.25 && degrees < 123.75) return "В ЮВ";
-  if (degrees >= 123.75 && degrees < 146.25) return "ЮВ";
-  if (degrees >= 146.25 && degrees < 168.75) return "Ю ЮВ";
-  if (degrees >= 168.75 && degrees < 191.25) return "Ю";
-  if (degrees >= 191.25 && degrees < 213.75) return "Ю ЮЗ";
-  if (degrees >= 213.75 && degrees < 236.25) return "ЮЗ";
-  if (degrees >= 236.25 && degrees < 258.75) return "З ЮЗ";
-  if (degrees >= 258.75 && degrees < 281.25) return "З";
-  if (degrees >= 281.25 && degrees < 303.75) return "З СЗ";
-  if (degrees >= 303.75 && degrees < 326.25) return "СЗ";
-  if (degrees >= 326.25 && degrees < 348.75) return "С СЗ";
-  return "Некорректное значение градусов";
+  if (degrees >= 348.75 || degrees < 11.25) return "wind_N";
+  if (degrees >= 11.25 && degrees < 33.75) return "wind_NNE";
+  if (degrees >= 33.75 && degrees < 56.25) return "wind_NE";
+  if (degrees >= 56.25 && degrees < 78.75) return "wind_ENE";
+  if (degrees >= 78.75 && degrees < 101.25) return "wind_E";
+  if (degrees >= 101.25 && degrees < 123.75) return "wind_ESE";
+  if (degrees >= 123.75 && degrees < 146.25) return "wind_SE";
+  if (degrees >= 146.25 && degrees < 168.75) return "wind_SSE";
+  if (degrees >= 168.75 && degrees < 191.25) return "wind_S";
+  if (degrees >= 191.25 && degrees < 213.75) return "wind_SSW";
+  if (degrees >= 213.75 && degrees < 236.25) return "wind_SW";
+  if (degrees >= 236.25 && degrees < 258.75) return "wind_WSW";
+  if (degrees >= 258.75 && degrees < 281.25) return "wind_W";
+  if (degrees >= 281.25 && degrees < 303.75) return "wind_WNW";
+  if (degrees >= 303.75 && degrees < 326.25) return "wind_NW";
+  if (degrees >= 326.25 && degrees < 348.75) return "wind_NNW";
+  return "";
 };
 
-const WeatherIndicators = ({ data, isLoading }) => {
+const WeatherIndicators = ({ data, isLoading, unitSystem, isMobile}) => {
+  const { resolvedTheme } = useTheme();
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-2 gap-4">
       {isLoading ? (
         [...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="bg-grainy relative flex h-35 flex-col items-start justify-between overflow-hidden rounded-xl border-t border-white/20 bg-gradient-to-b from-slate-900 to-slate-800 p-4 shadow-lg"
+            className="bg-grainy relative flex h-35 flex-col items-start justify-between overflow-hidden rounded-xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg dark:border-white/20 dark:dark:from-slate-900 dark:dark:to-slate-800"
           >
             <div className="flex h-full w-full flex-row">
               <div className="flex flex-col justify-between">
-                <span className="mr-3 text-sm text-gray-400">
+                <span className="mr-3 text-sm text-gray-600 dark:text-gray-400">
                   <Skeleton />
                 </span>
-                <span className="text-3xl leading-[0.7] font-semibold text-cyan-50">
+                <span className="text-3xl leading-[0.7] font-semibold text-gray-950 dark:text-cyan-50">
                   <Skeleton width={60} />
                 </span>
-                <span className="mr-2 text-sm text-gray-400">
+                <span className="mr-2 text-sm text-gray-600 dark:text-gray-400">
                   <Skeleton />
                 </span>
               </div>
               <div className="flex flex-1 items-center justify-end">
-                <Skeleton width={75} height={75} />
+                <Skeleton width={isMobile ? 60 : 75} height={isMobile ? 60 : 75} />
               </div>
             </div>
           </div>
         ))
       ) : (
         <>
-          {/* Карточка влажности */}
-          <div className="bg-grainy relative flex h-35 flex-col items-start justify-between overflow-hidden rounded-xl border-t border-white/20 bg-gradient-to-b from-slate-900 to-slate-800 p-4 shadow-lg">
+          {/* humidity */}
+          <div className="bg-grainy dark: relative flex h-35 flex-col items-start justify-between overflow-hidden rounded-xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
             <div className="flex h-full w-full flex-row gap-2">
               <div className="flex flex-col justify-between">
-                <span className="text-sm text-gray-400">Влажность</span>
-                <span className="text-3xl font-semibold text-cyan-50">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {t("humidity")}
+                </span>
+                <span className="text-3xl font-semibold text-gray-950 dark:text-cyan-50">
                   {data.humidity}
                   <span className="text-base font-normal"> %</span>
                 </span>
-                <span className="text-sm text-gray-400">
-                  Точка росы {data.dewPoint}°C
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                {t("dew_point")} {formatTemperature(data.dewPoint, unitSystem)}
                 </span>
               </div>
 
               <div className="flex flex-1 justify-end">
-                <div className="relative flex h-full w-8 flex-col items-center justify-between gap-0.5 text-xs text-gray-400 select-none">
+                <div className="relative flex h-full w-8 flex-col items-center justify-between gap-0.5 text-xs text-gray-600 select-none dark:text-gray-400">
                   <span>100</span>
 
-                  <VerticalBarIndicator value={data.humidity} height={100} />
+                  <VerticalBarIndicator
+                    value={data.humidity}
+                    height={100}
+                    pointerColor={resolvedTheme === "dark" ? "#99a1af" : "#4a5565"}
+                  />
 
                   <span>0</span>
                 </div>
@@ -115,35 +125,35 @@ const WeatherIndicators = ({ data, isLoading }) => {
             </div>
           </div>
 
-          {/* Карточка давления */}
-          <div className="bg-grainy relative flex h-35 flex-col items-start justify-between overflow-hidden rounded-xl border-t border-white/20 bg-gradient-to-b from-slate-900 to-slate-800 p-4 shadow-lg">
+          {/* pressure */}
+          <div className="bg-grainy relative flex h-35 flex-col items-start justify-between overflow-hidden rounded-xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
             <div className="flex h-full w-full flex-row">
-              {/* Левая часть с текстом */}
+
               <div className="flex flex-col justify-between">
-                <span className="w-3 text-sm whitespace-nowrap text-gray-400">
-                  Давление
+                <span className="w-3 text-sm whitespace-nowrap text-gray-600 dark:text-gray-400">
+                {t("pressure")}
                 </span>
-                <span className="text-3xl leading-[0.7] font-semibold text-cyan-50">
-                  {data.pressure}{" "}
-                  <span className="text-base font-normal">мбар</span>
+                <span className="text-3xl leading-[0.7] font-semibold text-gray-950 dark:text-cyan-50">
+                  {formatPressure(data.pressure, unitSystem).split(" ")[0]}{" "}
+                  <span className="text-base font-normal">{t(formatPressure(data.pressure, unitSystem).split(" ")[1])}</span>
                 </span>
-                <span className="w-3 text-sm whitespace-nowrap text-gray-400">
-                  {getPressureLevel(data.pressure)}
+                <span className="w-3 text-sm whitespace-nowrap text-gray-600 dark:text-gray-400">
+                {t(getPressureLevel(data.pressure))}
                 </span>
               </div>
 
-              {/* Спидометр давления */}
               <div className="flex flex-1 items-center justify-end">
                 <ArcGauge
+                  key={isMobile}
                   value={data.pressure}
                   minValue={950}
                   maxValue={1050}
-                  size={75}
+                  size={isMobile ? 60 : 75}
                   width={10}
                   arcAngle={240}
-                  backgroundColor="#4b5563"
+                  backgroundColor={resolvedTheme === "dark" ? "#4b5563" : "#99a1af"}
                   fillColor="#3b82f6"
-                  pointerColor="white"
+                  pointerColor={resolvedTheme === "dark" ? "#99a1af" : "#4a5565"}
                   gradientFill={[
                     { offset: "0%", color: "#3b82f6" },
                     { offset: "100%", color: "#06b6d4" },
@@ -153,33 +163,32 @@ const WeatherIndicators = ({ data, isLoading }) => {
             </div>
           </div>
 
-          {/* 🔹 Карточка УФ-индекса */}
-          <div className="bg-grainy relative flex h-35 flex-col items-start justify-between overflow-hidden rounded-xl border-t border-white/20 bg-gradient-to-b from-slate-900 to-slate-800 p-4 shadow-lg">
+          {/* uv-index */}
+          <div className="bg-grainy relative flex h-35 flex-col items-start justify-between overflow-hidden rounded-xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
             <div className="flex h-full w-full flex-row">
-              {/* Левая часть с текстом */}
               <div className="flex flex-col justify-between">
-                <span className="w-3 text-sm whitespace-nowrap text-gray-400">
-                  УФ-индекс
+                <span className="w-3 text-sm whitespace-nowrap text-gray-600 dark:text-gray-400">
+                  {t("uv_index")}
                 </span>
-                <span className="text-3xl font-semibold text-cyan-50">
+                <span className="text-3xl font-semibold text-gray-950 dark:text-cyan-50">
                   {data.uvIndex}
                 </span>
-                <span className="w-3 text-sm whitespace-nowrap text-gray-400">
-                  {getUVLevel(data.uvIndex)}
+                <span className="w-3 text-sm whitespace-nowrap text-gray-600 dark:text-gray-400">
+                  {t(getUVLevel(data.uvIndex))}
                 </span>
               </div>
 
-              {/* Спидометр скорости ветра */}
               <div className="flex min-w-fit flex-1 items-center justify-end">
                 <ArcGauge
+                  key={isMobile}
                   value={data.uvIndex}
                   minValue={0}
                   maxValue={11}
-                  size={75}
+                  size={isMobile ? 60 : 75}
                   width={10}
                   arcAngle={240}
-                  backgroundColor="#4b5563"
-                  pointerColor="white"
+                  backgroundColor={resolvedTheme === "dark" ? "#4b5563" : "#99a1af"}
+                  pointerColor={resolvedTheme === "dark" ? "#99a1af" : "#4a5565"}
                   gradientFill={[
                     {
                       offset: "0%",
@@ -194,33 +203,35 @@ const WeatherIndicators = ({ data, isLoading }) => {
               </div>
             </div>
           </div>
-
-          <div className="bg-grainy relative flex h-35 flex-col items-start justify-between overflow-hidden rounded-xl border-t border-white/20 bg-gradient-to-b from-slate-900 to-slate-800 p-4 shadow-lg">
+          
+          {/* wind */}
+          <div className="bg-grainy relative flex h-35 flex-col items-start justify-between overflow-hidden rounded-xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
             <div className="flex h-full w-full flex-row justify-between gap-2">
-              {/* Левая часть с текстом */}
               <div className="flex flex-col justify-between">
-                <span className="text-sm text-gray-400">Скорость ветра</span>
-                <span className="text-3xl font-semibold text-cyan-50">
-                  {data.windSpeed}{" "}
-                  <span className="text-base font-normal">м/с</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {t("wind")}
                 </span>
-                <div className="flex flex-wrap gap-x-1 text-sm text-gray-400">
+                <span className="text-3xl font-semibold leading-[0.7] text-gray-950 dark:text-cyan-50">
+                  {formatWindSpeed(data.windSpeed, unitSystem).split(" ")[0]}{" "}
+                  <span className="text-base font-normal">{t(formatWindSpeed(data.windSpeed, unitSystem).split(" ")[1])}</span>
+                </span>
+                <div className="flex flex-wrap gap-x-1 text-sm text-gray-600 dark:text-gray-400">
                   <span className="whitespace-nowrap">
-                    {getWindLevel(data.windSpeed)}
+                    {t(getWindLevel(data.windSpeed))}
                   </span>
-                  <span className="hidden sm:inline">•</span>
-                  <span className="whitespace-nowrap">
-                    {getWindDirection(data.windDirection)}
+                  <span className="hidden md:inline">•</span>
+                  <span className="whitespace-nowrap hidden md:inline">
+                    {t(getWindDirection(data.windDirection))}
                   </span>
                 </div>
               </div>
 
-              {/* Спидометр УФ-индекса */}
-              <div className="flex flex-col items-center justify-center gap-0.5 text-xs text-gray-400 select-none">
+              <div className="flex flex-col items-center justify-center gap-0.5 text-xs text-gray-600 select-none dark:text-gray-400">
                 <span>C</span>
                 <DirectionArrow
-                  size={75}
+                  size={isMobile ? 60 : 75}
                   color="#facc15"
+                  ticksColor={resolvedTheme === "dark" ? "#99a1af" : "#4a5565"}
                   angle={
                     data.windDirection > 180
                       ? -360 + data.windDirection
@@ -252,6 +263,8 @@ WeatherIndicators.propTypes = {
     windDirection: PropTypes.number.isRequired,
   }).isRequired,
   isLoading: PropTypes.bool.isRequired,
+  unitSystem: PropTypes.string.isRequired,
+  isMobile: PropTypes.bool.isRequired
 };
 
 export default WeatherIndicators;

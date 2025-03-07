@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect, useId, useCallback } from "react";
+import PropTypes from "prop-types";
 import { motion, AnimatePresence } from "framer-motion";
-
-function classNames(...classes) {
-  return classes.filter(Boolean).join(" ");
-}
+import classNames from "classnames";
 
 const dropdownVariants = {
   hidden: { opacity: 0, scale: 0.7, y: 0, height: 0 },
@@ -17,9 +15,7 @@ const dropdownVariants = {
       visualDuration: 0.4,
       type: "spring",
       bounce: 0.4,
-      // when: "beforeChildren",
       ease: "easeInOut",
-
       staggerChildren: 0.1,
     },
   },
@@ -57,7 +53,6 @@ const DropdownMenu = ({
     } else {
       document.removeEventListener("mousedown", handleClickOutside);
     }
-
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, handleClickOutside]);
 
@@ -65,7 +60,7 @@ const DropdownMenu = ({
     <div className="relative w-full" ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
-        className={`flex items-center justify-center text-base ${buttonClass} focus:outline-none`}
+        className={`flex items-center justify-center text-base dark:text-cyan-50 text-gray-950 ${buttonClass} focus:outline-none`}
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-controls={buttonId}
@@ -73,12 +68,12 @@ const DropdownMenu = ({
         {isInline && <span>{buttonLabel}</span>}
         <div className="flex items-center">
           {secondLabel && (
-            <span className="ml-4 font-semibold text-gray-400 md:ml-0">
+            <span className="ml-4 font-semibold dark:text-gray-400 text-gray-600 md:ml-0">
               {secondLabel}
             </span>
           )}
           <motion.svg
-            className="ml-2 h-2.5 w-2.5 stroke-gray-400"
+            className="ml-2 h-2.5 w-2.5 dark:stroke-gray-400 stroke-gray-600"
             animate={{ rotate: isOpen ? 180 : 0 }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
             aria-hidden="true"
@@ -96,7 +91,6 @@ const DropdownMenu = ({
         </div>
       </button>
 
-      {/* Выпадающее меню */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -106,7 +100,7 @@ const DropdownMenu = ({
             animate="visible"
             exit="exit"
             className={classNames(
-              "right-0 z-10 flex flex-col overflow-hidden rounded-2xl md:absolute md:mt-5 md:min-w-35 md:origin-top-right md:gap-0 md:border-t md:border-white/20 md:bg-white md:shadow-xl md:dark:bg-gray-700",
+              "right-0 z-10 flex flex-col overflow-hidden md:rounded-2xl md:absolute md:mt-5 md:min-w-35 md:origin-top-right md:gap-0 md:border-t dark:md:border-white/20 md:border-white md:bg-slate-50 md:shadow-xl md:dark:bg-gray-700"
             )}
           >
             {items.map((item, index) => (
@@ -122,7 +116,7 @@ const DropdownMenu = ({
                   setIsOpen(false);
                   item.onClick();
                 }}
-                className="mt-2 block h-8 w-full rounded-lg px-8 py-2 text-left text-base text-gray-400 transition-colors duration-400 ease-in-out hover:bg-gray-100 md:mt-0 md:h-auto md:rounded-none md:px-4 md:text-sm md:text-cyan-50 dark:hover:bg-white/10 dark:hover:text-cyan-50"
+                className="mt-2 flex items-center h-8 w-full rounded-lg px-8 py-2 text-left text-base dark:text-gray-400 text-gray-600 transition-colors duration-400 ease-in-out hover:bg-gray-100 md:mt-0 md:h-auto md:rounded-none md:px-4 md:text-sm dark:md:text-cyan-50 md:text-gray-700 dark:hover:bg-white/10 dark:hover:text-cyan-50"
               >
                 {item.label}
               </motion.button>
@@ -132,6 +126,19 @@ const DropdownMenu = ({
       </AnimatePresence>
     </div>
   );
+};
+
+DropdownMenu.propTypes = {
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      onClick: PropTypes.func.isRequired,
+    })
+  ).isRequired,
+  buttonLabel: PropTypes.string,
+  secondLabel: PropTypes.string,
+  buttonClass: PropTypes.string,
+  isInline: PropTypes.bool,
 };
 
 export default DropdownMenu;

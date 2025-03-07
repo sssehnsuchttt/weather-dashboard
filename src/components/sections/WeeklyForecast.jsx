@@ -2,14 +2,16 @@ import PropTypes from "prop-types";
 import WeatherIcon from "../ui/WeatherIcon";
 import { motion } from "framer-motion";
 import Skeleton from "react-loading-skeleton";
+import { formatTemperature } from "../../utils/unitSystem";
+import { useTranslation } from "react-i18next";
 
-const WeeklyForecast = ({ data, isLoading }) => {
-  if (!data || data.length === 0) return null;
+const WeeklyForecast = ({ data, isLoading, unitSystem }) => {
+  const { t } = useTranslation();
 
   return (
-    <div className="bg-grainy relative flex flex-1 flex-col self-stretch overflow-hidden rounded-2xl border-t border-white/20 bg-gradient-to-b from-slate-900 to-slate-800 p-4 shadow-lg">
-      <h2 className="mb-4 text-sm text-gray-400">
-        {isLoading ? <Skeleton width={110} /> : "Прогноз на 7 дней"}
+    <div className="bg-grainy relative flex flex-1 flex-col self-stretch overflow-hidden rounded-2xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
+      <h2 className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        {isLoading ? <Skeleton width={110} /> : t("weekly_forecast")}
       </h2>
 
       <div className="flex min-h-100 flex-col gap-1 md:flex-1">
@@ -20,10 +22,10 @@ const WeeklyForecast = ({ data, isLoading }) => {
                 className="relative flex flex-1 items-center justify-between"
               >
                 {index !== data.length - 1 && (
-                  <div className="absolute bottom-0 left-0 w-full border-t border-gray-700"></div>
+                  <div className="absolute bottom-0 left-0 w-full border-t border-gray-400 dark:border-gray-700"></div>
                 )}
 
-                <span className="text-sm text-cyan-50">
+                <span className="text-sm text-gray-950 dark:text-cyan-50">
                   <Skeleton width={80} />
                 </span>
 
@@ -32,7 +34,7 @@ const WeeklyForecast = ({ data, isLoading }) => {
                     <Skeleton width={40} height={40} />
                   </div>
 
-                  <div className="flex min-w-[72px] items-center gap-1 text-right text-sm text-gray-400">
+                  <div className="flex min-w-[72px] items-center gap-1 text-right text-sm text-gray-600 dark:text-gray-400">
                     <Skeleton width={70} />
                   </div>
                 </div>
@@ -55,10 +57,12 @@ const WeeklyForecast = ({ data, isLoading }) => {
                 }}
               >
                 {index !== data.length - 1 && (
-                  <div className="absolute bottom-0 left-0 w-full border-t border-gray-700"></div>
+                  <div className="absolute bottom-0 left-0 w-full border-t border-gray-400 dark:border-gray-700"></div>
                 )}
 
-                <span className="text-sm text-cyan-50">{day.day}</span>
+                <span className="text-sm text-gray-950 dark:text-cyan-50">
+                  {day.day}
+                </span>
 
                 <div className="relative flex items-center">
                   <div className="absolute right-0 mr-26 flex min-w-12 items-center justify-center">
@@ -69,10 +73,12 @@ const WeeklyForecast = ({ data, isLoading }) => {
                     />
                   </div>
 
-                  <div className="flex min-w-[72px] items-center gap-1 text-right text-sm text-gray-400">
-                    <span className="text-cyan-50">{day.maxTemp}°C</span>
+                  <div className="flex min-w-[72px] items-center gap-1 text-right text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-gray-950 dark:text-cyan-50">
+                      {formatTemperature(day.maxTemp, unitSystem)}
+                    </span>
                     <span>/</span>
-                    <span>{day.minTemp}°C</span>
+                    <span>{formatTemperature(day.minTemp, unitSystem)}</span>
                   </div>
                 </div>
               </motion.div>
@@ -92,6 +98,7 @@ WeeklyForecast.propTypes = {
     }),
   ).isRequired,
   isLoading: PropTypes.bool.isRequired,
+  unitSystem: PropTypes.string.isRequired,
 };
 
 export default WeeklyForecast;

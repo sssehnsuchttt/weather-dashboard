@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo} from "react";
 import PropTypes from "prop-types";
 import { motion } from "framer-motion";
 
@@ -18,9 +18,7 @@ function DirectionArrow({
   style = {},
 }) {
   const [animatedAngle, setAnimatedAngle] = useState(0);
-  const pathRef = useRef(null);
 
-  // Запускаем анимацию поворота с задержкой
   useEffect(() => {
     const timeout = setTimeout(() => setAnimatedAngle(angle), 100);
     return () => clearTimeout(timeout);
@@ -89,7 +87,7 @@ function DirectionArrow({
 
       <motion.div
         animate={{ rotateZ: animatedAngle }}
-        transition={{ duration: transitionDuration / 1000 }}
+        transition={{ duration: transitionDuration / 1000, ease: "easeInOut" }}
         className="absolute -scale-y-100"
         style={{ width: `${size}px`, height: `${size}px`, scale: "0.7" }}
         //
@@ -106,14 +104,21 @@ function DirectionArrow({
 }
 
 DirectionArrow.propTypes = {
-  size: PropTypes.number,
+  size: PropTypes.number.isRequired, 
   color: PropTypes.string,
-  angle: PropTypes.number,
-  showTicks: PropTypes.bool,
+  gradientFill: PropTypes.arrayOf(
+    PropTypes.shape({
+      offset: PropTypes.string.isRequired, 
+      color: PropTypes.string.isRequired, 
+    })
+  ),
+  angle: PropTypes.number, 
+  showTicks: PropTypes.bool, 
   tickCount: PropTypes.number,
-  className: PropTypes.string,
-  style: PropTypes.object,
+  ticksColor: PropTypes.string, 
   transitionDuration: PropTypes.number,
+  className: PropTypes.string,
+  style: PropTypes.object, 
 };
 
 export default DirectionArrow;
