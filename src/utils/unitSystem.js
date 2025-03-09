@@ -3,7 +3,7 @@ function formatTemperature(value, unitSystem) {
     const fahrenheit = (value * 9) / 5 + 32;
     return `${fahrenheit.toFixed(0)}°F`;
   }
-  return `${value}°C`;
+  return `${value.toFixed(0)}°C`;
 }
 
 function formatWindSpeed(value, unitSystem) {
@@ -11,7 +11,7 @@ function formatWindSpeed(value, unitSystem) {
     const mph = value * 2.237;
     return `${mph.toFixed(1)} wind_speed_unit_mph`;
   }
-  return `${value} wind_speed_unit_mps`;
+  return `${value.toFixed(0)} wind_speed_unit_mps`;
 }
 
 function formatPressure(value, unitSystem) {
@@ -19,7 +19,7 @@ function formatPressure(value, unitSystem) {
     const inHg = value * 0.02953;
     return `${inHg.toFixed(2)} pressure_unit_inhg`;
   }
-  return `${value} pressure_unit_mbar`;
+  return `${value.toFixed(0)} pressure_unit_mbar`;
 }
 
 function formatPrecipitation(value, unitSystem) {

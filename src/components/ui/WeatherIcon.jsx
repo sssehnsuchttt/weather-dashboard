@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import classNames from "classnames";
 
-const basePath = import.meta.env.DEV ? "./public/" : import.meta.env.BASE_URL;
+const basePath = import.meta.env.DEV ? "./" : import.meta.env.BASE_URL;
 
 const weatherIcons = {
   0: {
@@ -221,13 +221,10 @@ const weatherIcons = {
   },
 };
 
-const isNight = (hour) => hour < 6 || hour > 18;
-
-const WeatherIcon = ({ code, hour, className, glow = false }) => {
-  const timeOfDay = isNight(hour) ? "night" : "day";
+const WeatherIcon = ({ code, isDay, className, glow = false }) => {
   const iconData = weatherIcons[code] || weatherIcons[3];
-  const iconName = iconData[timeOfDay];
-  const glowColor = iconData.glow[timeOfDay];
+  const iconName = iconData[isDay === 1 ? "day" : "night"];
+  const glowColor = iconData.glow[isDay === 1 ? "day" : "night"];
 
   return (
     <div className="relative flex items-center justify-center select-none">
@@ -251,7 +248,7 @@ const WeatherIcon = ({ code, hour, className, glow = false }) => {
 
 WeatherIcon.propTypes = {
   code: PropTypes.number.isRequired,
-  hour: PropTypes.number.isRequired,
+  isDay: PropTypes.bool.isRequired,
   className: PropTypes.string,
   glow: PropTypes.bool,
 };

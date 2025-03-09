@@ -10,78 +10,27 @@ import { useTheme } from "next-themes";
 import "./App.css";
 import { throttle } from "lodash";
 import i18n from "./i18n";
+import { useTranslation } from "react-i18next";
+import axios from "axios";
 
-const DUMMY_FORECAST = [
-  { day: "Чт, 27 февр.", code: 2, minTemp: -16, maxTemp: -6 },
-  { day: "Пт, 28 февр.", code: 3, minTemp: -14, maxTemp: -5 },
-  { day: "Сб, 1 марта", code: 2, minTemp: -10, maxTemp: -3 },
-  { day: "Вс, 2 марта", code: 3, minTemp: -8, maxTemp: -2 },
-  { day: "Ср, 3 марта", code: 1, minTemp: -9, maxTemp: -1 },
-  { day: "Чт, 4 марта", code: 2, minTemp: -11, maxTemp: -3 },
-  { day: "Пт, 5 марта", code: 1, minTemp: -12, maxTemp: -4 },
-];
-
-const WEATHER_DATA = {
-  city: "Красноярск",
-  temperature: -12,
-  feelsLike: -16,
-  condition: "Облачно",
-  maxTemp: -6,
-  minTemp: -16,
-  iconCode: 3,
-  time: "Вт, 25 февр. 02:28",
-  humidity: 59,
-  dewPoint: -15,
-  pressure: 1000,
-  uvIndex: 1,
-  windSpeed: 4,
-  windDirection: 240,
-};
-
-const DUMMY_HOURLY_DATA = [...Array(24)].map((_, i) => ({
-  time: `${String(i).padStart(2, "0")}:00`,
-  temperature: Math.floor(Math.random() * 15) - 15,
-  iconCode: i % 3 === 0 ? 2 : 3,
-}));
-
-const DUMMY_PRECIPITATION = [
-  { hour: "00:00", precipitation: 0.6 },
-  { hour: "01:00", precipitation: 0 },
-  { hour: "02:00", precipitation: 0 },
-  { hour: "03:00", precipitation: 0.3 },
-  { hour: "04:00", precipitation: 0.6 },
-  { hour: "05:00", precipitation: 1.2 },
-  { hour: "06:00", precipitation: 2.4 },
-  { hour: "07:00", precipitation: 1.8 },
-  { hour: "08:00", precipitation: 0.7 },
-  { hour: "09:00", precipitation: 0.2 },
-  { hour: "10:00", precipitation: 0 },
-  { hour: "11:00", precipitation: 0 },
-  { hour: "12:00", precipitation: 0 },
-  { hour: "13:00", precipitation: 0.4 },
-  { hour: "14:00", precipitation: 0.9 },
-  { hour: "15:00", precipitation: 1.5 },
-  { hour: "16:00", precipitation: 2.2 },
-  { hour: "17:00", precipitation: 3.8 },
-  { hour: "18:00", precipitation: 2.7 },
-  { hour: "19:00", precipitation: 1.3 },
-  { hour: "20:00", precipitation: 0.6 },
-  { hour: "21:00", precipitation: 0.2 },
-  { hour: "22:00", precipitation: 0.1 },
-  { hour: "23:00", precipitation: 0 },
-];
+const API_URL = "https://api.open-meteo.com/v1/forecast";
+const SEARCH_API_URL = "https://geocoding-api.open-meteo.com/v1/search";
 
 const languageNames = {
   en: "English",
   ru: "Русский",
   de: "Deutsch",
+  es: "Español",
+  fr: "Français",
+  zh: "中文 (简体)",
+  // ar: "العربية"
 };
+
 
 const menuItems = Object.keys(languageNames).map((lng) => ({
   label: languageNames[lng],
   onClick: () => {
     i18n.changeLanguage(lng);
-    console.log(`${languageNames[lng]} выбран`);
   },
 }));
 
@@ -91,12 +40,155 @@ function App() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const scrollRef = useRef(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const { i18n } = useTranslation();
+  const [cityList, setCityList] = useState([]);
+  const [selectedCity, setSelectedCity] = useState({
+    "icon": "uil-search rotate-y-180",
+    "admin": "Россия, Забайкальский Край, ",
+    "id": 2016284,
+    "city": "Солонцы",
+    "latitude": 51.45332,
+    "longitude": 118.85263
+});
+
   const [unitSystem, setUnitSystem] = useState(
-    localStorage.getItem("unit_system") || "si"
+    localStorage.getItem("unit_system") || "si",
   );
+
+  const SearchCity = async (name) => {
+    const namesList = name.split(",").map(item => item.trim()).filter(Boolean);
   
-  const toggleUnitSystem = () => setUnitSystem(unitSystem === "si" ? "imperial" : "si");
+    try {
+      const response = await axios.get(SEARCH_API_URL, {
+        params: {
+          name: namesList[namesList.length - 1],
+          count: 40,
+          language: i18n.language,
+        },
+      });
   
+      if (!response.data.results || !Array.isArray(response.data.results)) {
+        setCityList([{id: "not_found"}]); 
+        return;
+      }
+  
+      setCityList(
+        response.data.results
+          .map((city) => {
+            
+            const adminParts =
+              [city.country, city.admin1, city.admin2]
+                .filter((field) => field && field !== city.name);
+
+            return {
+            id: city.id,
+            admin: adminParts.length > 0 ? adminParts.join(", ") + ", " : "",
+            city: city.name,
+            latitude: city.latitude,
+            longitude: city.longitude
+            };
+          })
+          .filter((city) => namesList.length === 1 || namesList.slice(0, -1).some(name => city.admin.toLowerCase().includes(name.toLowerCase())))
+      );
+  
+    } catch (err) {
+      console.error("Error while search:", err);
+    }
+  };
+  
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await axios.get(API_URL, {
+          params: {
+            latitude: selectedCity.latitude,
+            longitude: selectedCity.longitude,
+            current:
+              "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,pressure_msl,wind_speed_10m,wind_direction_10m,is_day,cloud_cover",
+            hourly:
+              "temperature_2m,precipitation,precipitation_probability,weather_code",
+            daily:
+              "weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,uv_index_max,sunset,sunrise,precipitation_sum",
+            timezone: "auto",
+            forecast_days: 8,
+          },
+        });
+        const currentHour = new Date(response.data.current.time).getHours();
+        setData({
+          currentData: {
+            city: selectedCity.city,
+            temperature: response.data.current.temperature_2m,
+            feelsLike: response.data.current.apparent_temperature,
+            weatherCode: response.data.current.weather_code,
+            maxTemp: response.data.daily.temperature_2m_max[0],
+            minTemp: response.data.daily.temperature_2m_min[0],
+            time: response.data.current.time,
+            humidity: response.data.current.relative_humidity_2m,
+            pressure: response.data.current.pressure_msl,
+            uvIndex: response.data.daily.uv_index_max[0],
+            windSpeed: response.data.current.wind_speed_10m,
+            windDirection: response.data.current.wind_direction_10m,
+            isDay: response.data.current.is_day,
+            cloudCover: response.data.current.cloud_cover,
+            sunrise: response.data.daily.sunrise[0],
+            sunset: response.data.daily.sunset[0],
+            precipitationSum: response.data.daily.precipitation_sum[0]
+
+          },
+          dailyData: response.data.daily.time.slice(1, 8).map((_, index) => ({
+            time: response.data.daily.time[index + 1],
+            weatherCode: response.data.daily.weather_code[index + 1],
+            maxTemp: response.data.daily.temperature_2m_max[index + 1],
+            minTemp: response.data.daily.temperature_2m_min[index + 1],
+            precipitationSum: response.data.daily.precipitation_sum[index + 1]
+          })),
+          hourlyData: response.data.hourly.time
+            .slice(currentHour, currentHour + 24)
+            .map((_, index) => ({
+              time: response.data.hourly.time[currentHour + index],
+              weatherCode:
+                response.data.hourly.weather_code[currentHour + index],
+              temperature:
+                response.data.hourly.temperature_2m[currentHour + index],
+              precipitation: response.data.hourly.precipitation[currentHour + index],
+              precipitationProbability:
+                response.data.hourly.precipitation_probability[
+                  currentHour + index
+                ],
+              isDay: (() => {
+                const hourlyTime = response.data.hourly.time[
+                  currentHour + index
+                ].slice(11, 16);
+                const sunriseTime = response.data.daily.sunrise[0].slice(
+                  11,
+                  16,
+                );
+                const sunsetTime = response.data.daily.sunset[0].slice(11, 16);
+
+                return hourlyTime > sunriseTime && hourlyTime < sunsetTime;
+              })(),
+            })),
+        });
+      } catch (err) {
+        console.error("Ошибка загрузки данных:", err);
+        setError("Не удалось загрузить данные. Попробуйте позже.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [selectedCity]);
+
+  const toggleUnitSystem = () =>
+    setUnitSystem(unitSystem === "si" ? "imperial" : "si");
+
   const handleScroll = () => {
     const scrollTop = scrollRef.current.scrollTop;
     const scrollHeight =
@@ -107,7 +199,7 @@ function App() {
   useEffect(() => {
     const handleResize = throttle(() => {
       setIsMobile(window.innerWidth < 768);
-    }, 200); 
+    }, 200);
 
     window.addEventListener("resize", handleResize);
     return () => {
@@ -116,23 +208,18 @@ function App() {
     };
   }, []);
 
-  // Имитируем загрузку данных
-  useEffect(() => {
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-  }, []);
-
   // Когда пользователь кликает по городу из списка
   const handleCitySelect = (city) => {
-    console.log("Выбран город:", city);
-    // Ваша логика (например, запрос погоды для этого города)
+    if (city.id !== "not_found") {
+      setSelectedCity(city);
+      setIsLoading(true);
+    }
+    setCityList([]);
   };
 
   // Когда пользователь перестал вводить текст в поле поиска
   const handleSearch = (value) => {
-    console.log("Поиск:", value);
-    // Ваша логика поиска
+    SearchCity(value);
   };
 
   return (
@@ -150,19 +237,32 @@ function App() {
           >
             <div className="mx-auto mt-18 flex w-full max-w-6xl flex-col gap-4 md:flex-row">
               <div className="flex w-full flex-col gap-4 md:w-120">
-                <CurrentWeather data={WEATHER_DATA} isLoading={isLoading} unitSystem={unitSystem}/>
-                <WeatherIndicators data={WEATHER_DATA} isLoading={isLoading} unitSystem={unitSystem} isMobile={isMobile}/>
+                <CurrentWeather
+                  data={data?.currentData}
+                  isLoading={isLoading}
+                  unitSystem={unitSystem}
+                />
+                <WeatherIndicators
+                  data={data?.currentData}
+                  isLoading={isLoading}
+                  unitSystem={unitSystem}
+                  isMobile={isMobile}
+                />
               </div>
               <WeeklyForecast
-                data={DUMMY_FORECAST}
+                data={data?.dailyData}
                 isLoading={isLoading}
                 unitSystem={unitSystem}
               ></WeeklyForecast>
             </div>
             <div className="mx-auto mt-4 flex w-full max-w-6xl flex-1 flex-col gap-4">
-              <HourlyForecast data={DUMMY_HOURLY_DATA} isLoading={isLoading} unitSystem={unitSystem}/>
+              <HourlyForecast
+                data={data?.hourlyData}
+                isLoading={isLoading}
+                unitSystem={unitSystem}
+              />
               <PrecipitationChart
-                data={DUMMY_PRECIPITATION}
+                data={data}
                 isLoading={isLoading}
                 unitSystem={unitSystem}
                 isMobile={isMobile}
@@ -174,28 +274,13 @@ function App() {
             menuItems={menuItems}
             scrollProgress={scrollProgress}
             isLoading={isLoading}
-            cityList={[
-              {
-                icon: "uil-map-marker",
-                text: "Текущее местоположение",
-                subtext: "",
-              },
-              {
-                icon: "uil-search rotate-y-180",
-                text: "Красноярск",
-                subtext: ", Красноярский край",
-              },
-              {
-                icon: "uil-search rotate-y-180",
-                text: "Краснодар",
-                subtext: ", Краснодарский край",
-              },
-            ]}
+            cityList={cityList}
             onCitySelect={handleCitySelect}
             onSearch={handleSearch}
             unitSystem={unitSystem}
             onToggleUnitSystem={toggleUnitSystem}
             isMobile={isMobile}
+            onSearchClose={() => setCityList([])}
           />
         </div>
       </div>

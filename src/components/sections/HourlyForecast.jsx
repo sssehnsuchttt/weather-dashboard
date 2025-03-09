@@ -7,6 +7,11 @@ import classNames from "classnames";
 import { formatTemperature } from "../../utils/unitSystem";
 import { useTranslation } from "react-i18next";
 
+const precipitationCodes = [
+  51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85, 86,
+  95, 96, 99,
+];
+
 const HourlyForecast = ({ data, isLoading, unitSystem }) => {
   const { t } = useTranslation();
   const containerRef = useRef(null);
@@ -39,7 +44,7 @@ const HourlyForecast = ({ data, isLoading, unitSystem }) => {
   }, []);
 
   return (
-    <div className="bg-grainy relative flex h-50 flex-col overflow-hidden rounded-2xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
+    <div className="bg-grainy relative flex min-h-55 flex-col overflow-hidden rounded-2xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
       <h2 className="mb-2 text-sm text-gray-600 dark:text-gray-400">
         {isLoading ? <Skeleton width={140} /> : t("hourly_forecast")}
       </h2>
@@ -108,13 +113,21 @@ const HourlyForecast = ({ data, isLoading, unitSystem }) => {
                     <span className="text-sm text-gray-950 dark:text-cyan-50">
                       {formatTemperature(hour.temperature, unitSystem)}
                     </span>
-                    <WeatherIcon
-                      className="h-10 w-10 object-contain"
-                      code={hour.iconCode}
-                      hour={12}
-                    />
+                    <div className="relative flex">
+                      <WeatherIcon
+                        className="h-10 w-10 object-contain drop-shadow-sm"
+                        code={hour.weatherCode}
+                        isDay={Number(hour.isDay)}
+                      />
+                      {precipitationCodes.includes(hour.weatherCode) && hour.precipitationProbability > 10 &&
+                      <span className="absolute bottom-0 w-full translate-y-full text-center text-sm font-semibold text-sky-300 dark:text-sky-200">
+                      {hour.precipitationProbability}%
+                    </span>
+                      }
+                    </div>
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {hour.time}
+                      {hour.time.slice(11, 16)}
+                      {/* {hour.precipitationProbability} */}
                     </span>
                   </motion.div>
                   {i < data.length - 1 && (

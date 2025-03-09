@@ -16,6 +16,7 @@
     "@iconscout/react-unicons": "^2.2.4",
     "@tailwindcss/vite": "^4.0.8",
     "aos": "^2.3.4",
+    "axios": "^1.8.2",
     "chart.js": "^4.4.8",
     "classnames": "^2.5.1",
     "framer-motion": "^12.4.7",

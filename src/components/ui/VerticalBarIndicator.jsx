@@ -29,7 +29,7 @@ const VerticalBarIndicator = ({
         background: `linear-gradient(to top, ${bgGradientFill.join(", ")})`,
       }}
     >
-      <div className="relative flex h-full w-full overflow-hidden rounded-3xl">
+      <div className="relative flex h-full w-full overflow-hidden rounded-3xl drop-shadow-sm">
         <div
           className="absolute bottom-0 left-0 w-full transition-all ease-in-out"
           style={{

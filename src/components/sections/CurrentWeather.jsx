@@ -6,7 +6,7 @@ import { formatTemperature } from "../../utils/unitSystem";
 import { useTranslation } from "react-i18next";
 
 const CurrentWeather = ({ data, isLoading, unitSystem }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="bg-grainy relative overflow-hidden rounded-2xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
@@ -16,7 +16,17 @@ const CurrentWeather = ({ data, isLoading, unitSystem }) => {
             {isLoading ? <Skeleton width={100} /> : data.city}
           </h1>
           <span className="text-sm text-gray-600 dark:text-gray-400">
-            {isLoading ? <Skeleton width={100} /> : data.time}
+            {isLoading ? (
+              <Skeleton width={100} />
+            ) : (
+              new Intl.DateTimeFormat(i18n.language, {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+              })
+                .format(new Date(data.time))
+                .replace(/^\p{L}/u, (char) => char.toUpperCase())
+            )}
           </span>
         </div>
 
@@ -39,7 +49,11 @@ const CurrentWeather = ({ data, isLoading, unitSystem }) => {
             </div>
             <div className="flex flex-col items-start">
               <span className="text-xl font-semibold text-gray-950 dark:text-cyan-50">
-                {isLoading ? <Skeleton width={80} /> : data.condition}
+                {isLoading ? (
+                  <Skeleton width={80} />
+                ) : (
+                  t(`weather_code_${data.weatherCode}`)
+                )}
               </span>
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {isLoading ? (
@@ -56,9 +70,9 @@ const CurrentWeather = ({ data, isLoading, unitSystem }) => {
               <Skeleton width={96} height={96} />
             ) : (
               <WeatherIcon
-                className="h-24 w-24"
-                code={data.iconCode}
-                hour={12}
+                className="h-24 w-24 drop-shadow-sm"
+                code={data.weatherCode}
+                isDay={data.isDay}
                 glow
               />
             )}
@@ -90,11 +104,11 @@ CurrentWeather.propTypes = {
     city: PropTypes.string.isRequired,
     temperature: PropTypes.number.isRequired,
     feelsLike: PropTypes.number.isRequired,
-    condition: PropTypes.string.isRequired,
     maxTemp: PropTypes.number.isRequired,
     minTemp: PropTypes.number.isRequired,
-    iconCode: PropTypes.number.isRequired,
+    weatherCode: PropTypes.number.isRequired,
     time: PropTypes.string.isRequired,
+    isDay: PropTypes.string.isRequired,
   }),
   unitSystem: PropTypes.string.isRequired,
   isLoading: PropTypes.bool.isRequired,

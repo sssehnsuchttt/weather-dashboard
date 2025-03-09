@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import { formatTemperature, formatPressure, formatWindSpeed } from "../../utils/unitSystem";
 import { useTranslation } from "react-i18next";
 
+
 const getUVGradient = (uv) => {
   if (uv <= 2) return ["#2b7fff", "#52eafd"];
   if (uv <= 5) return ["#1eae53", "#4ade80"];
@@ -34,11 +35,11 @@ const getPressureLevel = (pressure) => {
 
 const getWindLevel = (windSpeed) => {
   if (windSpeed === 0) return "wind_calm";
-  if (windSpeed >= 1 && windSpeed <= 2) return "wind_light";
-  if (windSpeed >= 3 && windSpeed <= 5) return "wind_weak";
-  if (windSpeed >= 5 && windSpeed <= 7) return "wind_moderate";
-  if (windSpeed >= 7 && windSpeed <= 15) return "wind_strong";
-  if (windSpeed >= 15 && windSpeed <= 29) return "wind_storm";
+  if (windSpeed >= 1 && windSpeed < 3) return "wind_light";
+  if (windSpeed >= 3 && windSpeed < 5) return "wind_weak";
+  if (windSpeed >= 5 && windSpeed < 7) return "wind_moderate";
+  if (windSpeed >= 7 && windSpeed < 15) return "wind_strong";
+  if (windSpeed >= 15 && windSpeed < 30) return "wind_storm";
   if (windSpeed >= 30) return "wind_hurricane";
 };
 
@@ -61,6 +62,44 @@ const getWindDirection = (degrees) => {
   if (degrees >= 326.25 && degrees < 348.75) return "wind_NNW";
   return "";
 };
+
+function getUVIndex(uvMax, current, sunrise, sunset, cloudCover) {
+
+  const timeToSeconds = (time) => {
+    const [hours, minutes] = time.split("T")[1].split(":").map(Number);
+    return hours * 3600 + minutes * 60;
+  }
+
+  const sunriseSec = timeToSeconds(sunrise)
+  const sunsetSec = timeToSeconds(sunset)
+  const currentSec = timeToSeconds(current)
+
+
+  if (currentSec > sunsetSec || currentSec < sunriseSec)
+    return 0;
+
+  const dayProgress = (currentSec - sunriseSec) / (sunsetSec - sunriseSec);
+
+  const uvFactor = Math.sin(dayProgress * Math.PI);
+
+  if (cloudCover > 90) return (uvMax * uvFactor).toFixed(1) * 0.1; 
+  if (cloudCover > 75) return (uvMax * uvFactor).toFixed(1) * 0.3;
+  if (cloudCover > 50) return (uvMax * uvFactor).toFixed(1) * 0.5;
+  if (cloudCover > 25) return (uvMax * uvFactor).toFixed(1) * 0.7;
+  return (uvMax * uvFactor).toFixed(1) * 0.7;
+}
+
+
+
+const calculateDewPoint = (temperature, humidity) => {
+  let a = temperature >= 0 ? 17.27 : 22.452;
+  let b = temperature >= 0 ? 237.7 : 272.55;
+
+  let alpha = (a * temperature) / (b + temperature) + Math.log(humidity / 100);
+  let dewPoint = (b * alpha) / (a - alpha);
+
+  return Number(dewPoint.toFixed(2));
+}
 
 const WeatherIndicators = ({ data, isLoading, unitSystem, isMobile}) => {
   const { resolvedTheme } = useTheme();
@@ -105,7 +144,7 @@ const WeatherIndicators = ({ data, isLoading, unitSystem, isMobile}) => {
                   <span className="text-base font-normal"> %</span>
                 </span>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                {t("dew_point")} {formatTemperature(data.dewPoint, unitSystem)}
+                {t("dew_point")} {formatTemperature(calculateDewPoint(data.temperature, data.humidity), unitSystem)}
                 </span>
               </div>
 
@@ -171,17 +210,17 @@ const WeatherIndicators = ({ data, isLoading, unitSystem, isMobile}) => {
                   {t("uv_index")}
                 </span>
                 <span className="text-3xl font-semibold text-gray-950 dark:text-cyan-50">
-                  {data.uvIndex}
+                  {Math.round(getUVIndex(data.uvIndex, data.time, data.sunrise, data.sunset, data.cloudCover))}
                 </span>
                 <span className="w-3 text-sm whitespace-nowrap text-gray-600 dark:text-gray-400">
-                  {t(getUVLevel(data.uvIndex))}
+                  {t(getUVLevel(getUVIndex(data.uvIndex, data.time, data.sunrise, data.sunset, data.cloudCover)))}
                 </span>
               </div>
 
               <div className="flex min-w-fit flex-1 items-center justify-end">
                 <ArcGauge
                   key={isMobile}
-                  value={data.uvIndex}
+                  value={getUVIndex(data.uvIndex, data.time, data.sunrise, data.sunset, data.cloudCover)}
                   minValue={0}
                   maxValue={11}
                   size={isMobile ? 60 : 75}
@@ -192,11 +231,11 @@ const WeatherIndicators = ({ data, isLoading, unitSystem, isMobile}) => {
                   gradientFill={[
                     {
                       offset: "0%",
-                      color: getUVGradient(data.uvIndex)[0],
+                      color: getUVGradient(Math.round(getUVIndex(data.uvIndex, data.time, data.sunrise, data.sunset, data.cloudCover)))[0],
                     },
                     {
                       offset: "100%",
-                      color: getUVGradient(data.uvIndex)[1],
+                      color: getUVGradient(Math.round(getUVIndex(data.uvIndex, data.time, data.sunrise, data.sunset, data.cloudCover)))[1],
                     },
                   ]}
                 />
@@ -204,6 +243,7 @@ const WeatherIndicators = ({ data, isLoading, unitSystem, isMobile}) => {
             </div>
           </div>
           
+
           {/* wind */}
           <div className="bg-grainy relative flex h-35 flex-col items-start justify-between overflow-hidden rounded-xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
             <div className="flex h-full w-full flex-row justify-between gap-2">
@@ -227,7 +267,7 @@ const WeatherIndicators = ({ data, isLoading, unitSystem, isMobile}) => {
               </div>
 
               <div className="flex flex-col items-center justify-center gap-0.5 text-xs text-gray-600 select-none dark:text-gray-400">
-                <span>C</span>
+                <span>{t("wind_N")}</span>
                 <DirectionArrow
                   size={isMobile ? 60 : 75}
                   color="#facc15"
@@ -237,13 +277,13 @@ const WeatherIndicators = ({ data, isLoading, unitSystem, isMobile}) => {
                       ? -360 + data.windDirection
                       : data.windDirection
                   }
-                  className="rounded-full"
+                  className="rounded-full "
                   gradientFill={[
                     { offset: "0%", color: "#f6c309" },
                     { offset: "100%", color: "#f9e085" },
                   ]}
                 />
-                <span>Ю</span>
+                <span>{t("wind_S")}</span>
               </div>
             </div>
           </div>
@@ -256,11 +296,15 @@ const WeatherIndicators = ({ data, isLoading, unitSystem, isMobile}) => {
 WeatherIndicators.propTypes = {
   data: PropTypes.shape({
     humidity: PropTypes.number.isRequired,
-    dewPoint: PropTypes.number.isRequired,
+    temperature: PropTypes.number.isRequired,
     pressure: PropTypes.number.isRequired,
     uvIndex: PropTypes.number.isRequired,
     windSpeed: PropTypes.number.isRequired,
     windDirection: PropTypes.number.isRequired,
+    time: PropTypes.string.isRequired,
+    sunrise: PropTypes.string.isRequired,
+    sunset: PropTypes.string.isRequired,
+    cloudCover: PropTypes.number.isRequired
   }).isRequired,
   isLoading: PropTypes.bool.isRequired,
   unitSystem: PropTypes.string.isRequired,

@@ -134,13 +134,13 @@ function ArcGauge({
   const arcBottom = maxY;
 
   return (
-    <div className="relative flex">
+    <div className="relative flex ">
       <svg
         viewBox={`0 0 100 ${arcBottom}`}
         width={size}
         height={size}
         style={{ overflow: "visible" }}
-        className=""
+        className="drop-shadow-sm"
       >
         {/* Градиент */}
         {gradientFill && (

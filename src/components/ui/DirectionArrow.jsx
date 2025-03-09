@@ -86,9 +86,10 @@ function DirectionArrow({
       </svg>
 
       <motion.div
-        animate={{ rotateZ: animatedAngle }}
+        initial={{rotateY: 180}}
+        animate={{ rotateZ: animatedAngle}}
         transition={{ duration: transitionDuration / 1000, ease: "easeInOut" }}
-        className="absolute -scale-y-100"
+        className="absolute -scale-y-100 drop-shadow-sm"
         style={{ width: `${size}px`, height: `${size}px`, scale: "0.7" }}
         //
       >

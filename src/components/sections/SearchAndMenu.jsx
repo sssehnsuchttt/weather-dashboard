@@ -7,6 +7,7 @@ import DropdownMenu from "../ui/DropdownMenu";
 import MenuButton from "../ui/MenuButton";
 import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
+import Skeleton from "react-loading-skeleton";
 
 function SearchAndMenu({
   menuItems,
@@ -18,11 +19,14 @@ function SearchAndMenu({
   unitSystem,
   onToggleUnitSystem,
   isMobile,
+  onSearchClose,
 }) {
   const { t, i18n } = useTranslation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMenuBgVisible, setIsMenuBgVisible] = useState(false);
+  const [isSearchProcessing, setIsSearchProcessing] = useState(false);
+
   const { resolvedTheme, setTheme } = useTheme();
   const toggleTheme = () =>
     setTheme(resolvedTheme === "light" ? "dark" : "light");
@@ -35,13 +39,20 @@ function SearchAndMenu({
   }, [unitSystem]);
 
   useEffect(() => {
+    setIsSearchProcessing(false);
+  }, [cityList]);
+
+  useEffect(() => {
     if (isMenuOpen) {
       setIsMenuBgVisible(true);
     } else {
       setTimeout(() => setIsMenuBgVisible(false), 300);
     }
-    console.log(resolvedTheme);
   }, [isMenuOpen]);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [isMobile]);
 
   function toggleSearch(forceState = null) {
     const newState = forceState !== null ? forceState : !isSearchOpen;
@@ -81,9 +92,9 @@ function SearchAndMenu({
     if (typingTimer.current) {
       clearTimeout(typingTimer.current);
     }
-
+    setIsSearchProcessing(true);
     typingTimer.current = setTimeout(() => {
-      if (onSearch) {
+      if (onSearch && value) {
         onSearch(value);
       }
     }, 1000);
@@ -128,10 +139,44 @@ function SearchAndMenu({
                   onChange={handleSearchChange}
                   value={searchValue}
                 />
-
+                <AnimatePresence>
+                {isSearchProcessing && (
+                  
+                    <motion.div
+                      initial={{scale: 0, opacity: 0}}
+                      animate={{scale: 1, opacity: 1}}
+                      exit={{scale: 0, opacity: 0}}
+                      role="status"
+                      className="absolute top-1/2 right-0 mr-12 -translate-y-1/2"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        className="h-[16px] w-[16px] animate-spin fill-gray-200 text-gray-600 dark:text-gray-400"
+                        viewBox="0 0 100 101"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                          fill="currentColor"
+                        />
+                        <path
+                          d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                          fill="currentFill"
+                        />
+                      </svg>
+                      <span className="sr-only">Loading...</span>
+                    </motion.div>
+                  
+                )}
+                </AnimatePresence>
                 {/* searchbar close button */}
                 <div
-                  onClick={() => toggleSearch(false)}
+                  onClick={() => {
+                    setSearchValue("");
+                    onSearchClose();
+                    toggleSearch(false);
+                  }}
                   className={classNames(
                     "-mr-4 ml-4 flex h-full cursor-pointer items-center px-4 transition-all duration-400 ease-in-out",
                     isSearchOpen ? "translate-x-0" : "translate-x-full",
@@ -144,7 +189,7 @@ function SearchAndMenu({
               {/* cities dropdown list */}
               <div
                 className={classNames(
-                  "absolute top-0 left-0 z-40 -m-4 mt-14 h-dvh w-screen pb-24 md:mx-0 md:w-full",
+                  "absolute top-0 left-0 z-40 -m-4 mt-14 h-dvh w-screen pb-24 md:mx-0 md:max-h-120 md:w-full",
                   !isSearchOpen && "pointer-events-none",
                 )}
               >
@@ -152,53 +197,100 @@ function SearchAndMenu({
                   onExitComplete={handleAnimationComplete}
                   initial={false}
                 >
-                  {isSearchOpen ? (
+                  {isSearchOpen && !isSearchProcessing ? (
                     <motion.div
                       initial="hidden"
                       animate="visible"
                       exit="exit"
-                      variants={{
-                        hidden: { opacity: 0, scale: 0.85, y: 20 },
-                        visible: { opacity: 1, scale: 1, y: 0 },
-                        exit: { opacity: 0, scale: 0.85, y: 20 },
-                      }}
+                      variants={
+                        isMobile
+                          ? {
+                              hidden: { opacity: 0, scale: 1, y: 0 },
+                              visible: { opacity: 1, scale: 1, y: 0 },
+                              exit: { opacity: 0, scale: 1, y: 0 },
+                            }
+                          : {
+                              hidden: {
+                                opacity: 0,
+                                scale: 0.75,
+                                y: 20,
+                              },
+                              visible: { opacity: 1, scale: 1, y: 0 },
+                              exit: {
+                                opacity: 0,
+                                scale: 0.75,
+                                y: 20,
+                              },
+                            }
+                      }
                       transition={{
                         type: "spring",
                         duration: 0.4,
                         visualDuration: 0.4,
-                        bounce: 0.3,
-                        staggerChildren: 0.1,
+                        ease: "easeInOut",
+                        bounce: 0.4,
+                        staggerChildren: 0.02,
                       }}
                       className={classNames(
-                        "relative flex max-h-full flex-col items-start justify-between gap-2 overflow-hidden border-white px-4 md:gap-0 md:rounded-2xl md:border-t md:bg-slate-100 md:px-0 md:shadow-lg dark:border-white/20 md:dark:bg-slate-800",
+                        "relative flex max-h-full origin-top flex-col items-start justify-between gap-2 overflow-y-hidden border-white px-4 md:gap-0 md:rounded-2xl md:border-t md:bg-slate-100 md:px-0 md:shadow-lg dark:border-white/20 md:dark:bg-slate-800",
                         isMobile ? "" : "bg-grainy",
                       )}
                     >
-                      {cityList.map((item, index) => (
+                      {(!cityList.length ? [
+                        {
+                          id: "current_geo",
+                          icon: "uil-map-marker",
+                          admin: "",
+                          city: t("current_location"),
+                        },
+                        ] :
+                        [
+                          ...cityList.map((city) => ({
+                            icon: city.id === "not_found" ? "uil-multiply" : "uil-search rotate-y-180",
+                            admin: city.id === "not_found" && t("not_found"),
+                            ...city,
+                          })),
+                        ]).map((item, index) => (
                         <div
                           key={index}
-                          className="flex w-full flex-col rounded-2xl transition-colors duration-400 ease-in-out md:rounded-none md:hover:bg-gray-600/10 md:dark:hover:bg-slate-300/20"
+                          className="overflow-y-фгещ flex w-full flex-col rounded-2xl transition-colors duration-400 ease-in-out md:rounded-none md:hover:bg-gray-600/10 md:dark:hover:bg-slate-300/20"
                         >
                           <motion.div
-                            variants={{
-                              hidden: { opacity: 0, y: -15 },
-                              visible: { opacity: 1, y: 0 },
-                              exit: { opacity: 0, y: 15 },
+                            variants={
+                              isMobile
+                                ? {
+                                    hidden: { opacity: 0.5, scale: 0.8, y: 10 },
+                                    visible: { opacity: 1, scale: 1, y: 0 },
+                                    exit: { opacity: 0.5, scale: 0.8, y: 10 },
+                                  }
+                                : {
+                                    hidden: { opacity: 0.5, scale: 1, y: 10 },
+                                    visible: { opacity: 1, scale: 1, y: 0 },
+                                    exit: { opacity: 0.5, scale: 1, y: 10 },
+                                  }
+                            }
+                            transition={{
+                              type: "spring",
+                              duration: 0.4,
+                              visualDuration: 0.4,
+                              ease: "easeInOut",
+                              bounce: 0.3,
                             }}
-                            transition={{ duration: 0.3, ease: "easeOut" }}
-                            className="mt-2 flex h-10 w-full cursor-pointer items-center gap-2 rounded-2xl bg-slate-50 p-4 px-4 text-base transition-colors duration-400 outline-none first:mt-0 md:mt-0 md:h-12 md:rounded-none md:bg-transparent md:text-sm dark:bg-slate-800 md:dark:bg-transparent"
+                            className="mt-2 flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-2xl bg-slate-50 p-4 px-4 py-0 text-base transition-colors duration-400 outline-none first:mt-0 md:mt-0 md:h-12 md:rounded-none md:bg-transparent md:text-sm dark:bg-slate-800 md:dark:bg-transparent"
                             onClick={() => {
                               setIsSearchOpen(false);
+                              setSearchValue("");
+                              setIsSearchProcessing(false);
                               onCitySelect?.(item);
                             }}
                           >
                             <i
                               className={`uil h-fit w-fit ${item.icon} text-xl text-gray-600 dark:text-gray-400`}
                             ></i>
-                            <span className="font-medium text-black dark:text-cyan-50">
-                              {item.text}
-                              <span className="font-normal text-gray-600 dark:text-gray-400">
-                                {item.subtext}
+                            <span className="font-medium text-gray-600 dark:text-gray-400">
+                              {item.admin}
+                              <span className="font-normal text-black dark:text-cyan-50">
+                                {item.city}
                               </span>
                             </span>
                           </motion.div>
@@ -311,13 +403,18 @@ function SearchAndMenu({
       <div
         className={classNames(
           "absolute top-0 z-30 h-dvh w-full bg-black/70 transition-all duration-400 ease-in-out",
-          isSearchOpen || isMenuOpen
-            ? "opacity-full"
+          (isSearchOpen && !isMobile) || isMenuOpen
+            ? "opacity-full backdrop-blur-xs"
             : "pointer-events-none opacity-0",
-          isMenuOpen ? "bg-black/70" : "",
-          isSearchOpen
-            ? "bg-slate-300 md:bg-black/70 md:backdrop-blur-xs dark:bg-gray-900 dark:md:bg-black/70"
-            : "backdrop-blur-xs",
+        )}
+      ></div>
+
+      <div
+        className={classNames(
+          "absolute top-0 z-30 h-dvh w-full bg-slate-300 transition-all duration-400 ease-in-out dark:bg-gray-900",
+          isSearchOpen && isMobile
+            ? "opacity-full backdrop-blur-xs"
+            : "pointer-events-none opacity-0",
         )}
       ></div>
     </>
@@ -331,28 +428,20 @@ SearchAndMenu.propTypes = {
       onClick: PropTypes.func,
     }),
   ).isRequired,
-
   scrollProgress: PropTypes.number.isRequired,
-
   cityList: PropTypes.arrayOf(
     PropTypes.shape({
-      icon: PropTypes.string.isRequired,
       text: PropTypes.string.isRequired,
       subtext: PropTypes.string,
     }),
   ).isRequired,
-
   onCitySelect: PropTypes.func.isRequired,
-
   onSearch: PropTypes.func,
-
   isLoading: PropTypes.bool,
-
   unitSystem: PropTypes.oneOf(["si", "imperial"]).isRequired,
-
   onToggleUnitSystem: PropTypes.func.isRequired,
-
   isMobile: PropTypes.bool.isRequired,
+  onSearchClose: PropTypes.func.isRequired,
 };
 
 export default SearchAndMenu;
