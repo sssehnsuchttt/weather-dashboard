@@ -26,7 +26,6 @@ const languageNames = {
   // ar: "العربية"
 };
 
-
 const menuItems = Object.keys(languageNames).map((lng) => ({
   label: languageNames[lng],
   onClick: () => {
@@ -44,22 +43,67 @@ function App() {
   const [error, setError] = useState(null);
   const { i18n } = useTranslation();
   const [cityList, setCityList] = useState([]);
-  const [selectedCity, setSelectedCity] = useState({
-    "icon": "uil-search rotate-y-180",
-    "admin": "Россия, Забайкальский Край, ",
-    "id": 2016284,
-    "city": "Солонцы",
-    "latitude": 51.45332,
-    "longitude": 118.85263
-});
+
+  const [previousSyncDate, setPreviousSyncDate] = useState(
+    Number(localStorage.getItem("previous_sync_date")) || 0,
+  );
+  
+  const getValidCityData = () => {
+    try {
+      const storedData = localStorage.getItem("selected_city");
+      if (!storedData) throw new Error("Empty city localStorage data");
+  
+      const parsedData = JSON.parse(storedData);
+  
+      if (
+        !parsedData ||
+        typeof parsedData !== "object" ||
+        !("id" in parsedData) ||
+        !("city" in parsedData) ||
+        !("latitude" in parsedData) ||
+        !("longitude" in parsedData)
+      ) {
+        throw new Error("Corrupted city data");
+      }
+  
+      return parsedData;
+    } catch (error) {
+      console.warn("An error occurred while loading data from localStorage", error.message);
+      return {
+        admin: "Россия, ",
+        id: 524901,
+        city: "Москва",
+        latitude: 55.75222,
+        longitude: 37.61556,
+      }; 
+    }
+  };
+  
+  const [selectedCity, setSelectedCity] = useState(getValidCityData());
+  
 
   const [unitSystem, setUnitSystem] = useState(
     localStorage.getItem("unit_system") || "si",
   );
 
+  useEffect(() => {
+    if (selectedCity) {
+      localStorage.setItem("selected_city", JSON.stringify(selectedCity));
+    }
+  }, [selectedCity]);
+
+  useEffect(() => {
+    if (data) {
+      localStorage.setItem("weather_data", JSON.stringify(data));
+    }
+  }, [data])
+
   const SearchCity = async (name) => {
-    const namesList = name.split(",").map(item => item.trim()).filter(Boolean);
-  
+    const namesList = name
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
     try {
       const response = await axios.get(SEARCH_API_URL, {
         params: {
@@ -68,39 +112,48 @@ function App() {
           language: i18n.language,
         },
       });
-  
+
       if (!response.data.results || !Array.isArray(response.data.results)) {
-        setCityList([{id: "not_found"}]); 
+        setCityList([{ id: "not_found" }]);
         return;
       }
-  
+
       setCityList(
         response.data.results
           .map((city) => {
-            
-            const adminParts =
-              [city.country, city.admin1, city.admin2]
-                .filter((field) => field && field !== city.name);
+            const adminParts = [city.country, city.admin1, city.admin2].filter(
+              (field) => field && field !== city.name,
+            );
 
             return {
-            id: city.id,
-            admin: adminParts.length > 0 ? adminParts.join(", ") + ", " : "",
-            city: city.name,
-            latitude: city.latitude,
-            longitude: city.longitude
+              id: city.id,
+              admin: adminParts.length > 0 ? adminParts.join(", ") + ", " : "",
+              city: city.name,
+              latitude: city.latitude,
+              longitude: city.longitude,
             };
           })
-          .filter((city) => namesList.length === 1 || namesList.slice(0, -1).some(name => city.admin.toLowerCase().includes(name.toLowerCase())))
+          .filter(
+            (city) =>
+              namesList.length === 1 ||
+              namesList
+                .slice(0, -1)
+                .some((name) =>
+                  city.admin.toLowerCase().includes(name.toLowerCase()),
+                ),
+          ),
       );
-  
     } catch (err) {
       console.error("Error while search:", err);
     }
   };
-  
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!(((Date.now() / 1000) - previousSyncDate) < 60)) {
+        setData(JSON.parse(localStorage.getItem("weather_data")));
+        setIsLoading(false);
+      }
       try {
         setIsLoading(true);
         setError(null);
@@ -114,12 +167,13 @@ function App() {
             hourly:
               "temperature_2m,precipitation,precipitation_probability,weather_code",
             daily:
-              "weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,uv_index_max,sunset,sunrise,precipitation_sum",
+              "weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,uv_index_max,sunset,sunrise,precipitation_sum,precipitation_probability_max",
             timezone: "auto",
             forecast_days: 8,
           },
         });
         const currentHour = new Date(response.data.current.time).getHours();
+        localStorage.setItem("previous_sync_date", Date.now() / 1000);
         setData({
           currentData: {
             city: selectedCity.city,
@@ -138,15 +192,16 @@ function App() {
             cloudCover: response.data.current.cloud_cover,
             sunrise: response.data.daily.sunrise[0],
             sunset: response.data.daily.sunset[0],
-            precipitationSum: response.data.daily.precipitation_sum[0]
-
+            precipitationSum: response.data.daily.precipitation_sum[0],
           },
           dailyData: response.data.daily.time.slice(1, 8).map((_, index) => ({
             time: response.data.daily.time[index + 1],
             weatherCode: response.data.daily.weather_code[index + 1],
             maxTemp: response.data.daily.temperature_2m_max[index + 1],
             minTemp: response.data.daily.temperature_2m_min[index + 1],
-            precipitationSum: response.data.daily.precipitation_sum[index + 1]
+            precipitationSum: response.data.daily.precipitation_sum[index + 1],
+            precipitationProbabilityMax:
+              response.data.daily.precipitation_probability_max[index + 1],
           })),
           hourlyData: response.data.hourly.time
             .slice(currentHour, currentHour + 24)
@@ -156,7 +211,8 @@ function App() {
                 response.data.hourly.weather_code[currentHour + index],
               temperature:
                 response.data.hourly.temperature_2m[currentHour + index],
-              precipitation: response.data.hourly.precipitation[currentHour + index],
+              precipitation:
+                response.data.hourly.precipitation[currentHour + index],
               precipitationProbability:
                 response.data.hourly.precipitation_probability[
                   currentHour + index
@@ -208,7 +264,6 @@ function App() {
     };
   }, []);
 
-  // Когда пользователь кликает по городу из списка
   const handleCitySelect = (city) => {
     if (city.id !== "not_found") {
       setSelectedCity(city);
@@ -217,7 +272,6 @@ function App() {
     setCityList([]);
   };
 
-  // Когда пользователь перестал вводить текст в поле поиска
   const handleSearch = (value) => {
     SearchCity(value);
   };

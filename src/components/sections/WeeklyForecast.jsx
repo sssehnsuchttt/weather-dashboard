@@ -5,11 +5,16 @@ import Skeleton from "react-loading-skeleton";
 import { formatTemperature } from "../../utils/unitSystem";
 import { useTranslation } from "react-i18next";
 
+const precipitationCodes = [
+  51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85, 86,
+  95, 96, 99,
+];
+
 const WeeklyForecast = ({ data, isLoading, unitSystem }) => {
   const { t, i18n } = useTranslation();
 
   return (
-    <div className="bg-grainy relative flex flex-1 flex-col self-stretch overflow-hidden rounded-2xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
+    <div className="bg-grainy relative flex min-w-80 flex-1 flex-col self-stretch overflow-hidden rounded-2xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
       <h2 className="mb-4 text-sm text-gray-600 dark:text-gray-400">
         {isLoading ? <Skeleton width={110} /> : t("weekly_forecast")}
       </h2>
@@ -30,12 +35,12 @@ const WeeklyForecast = ({ data, isLoading, unitSystem }) => {
                 </span>
 
                 <div className="relative flex items-center">
-                  <div className="absolute right-0 mr-26 flex min-w-12 items-center justify-center">
-                    <Skeleton width={40} height={40} />
+                  <div className="right-0 mr-2 flex min-w-12 flex-col items-center justify-center">
+                  <Skeleton width={40} height={40} />
                   </div>
 
-                  <div className="flex min-w-[72px] items-center gap-1 text-right text-sm text-gray-600 dark:text-gray-400">
-                    <Skeleton width={70} />
+                  <div className="flex w-23 items-center justify-end gap-1 text-right text-sm text-gray-600 dark:text-gray-400">
+                    <Skeleton width={80} />
                   </div>
                 </div>
               </div>
@@ -62,22 +67,28 @@ const WeeklyForecast = ({ data, isLoading, unitSystem }) => {
 
                 <span className="text-sm text-gray-950 dark:text-cyan-50">
                   {new Intl.DateTimeFormat(i18n.language, {
-                    weekday: "short", 
-                    day: "numeric", 
-                    month: "short", 
-                  }).format(new Date(day.time)).replace(/^\p{L}/u, (char) => char.toUpperCase())}
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })
+                    .format(new Date(day.time))
+                    .replace(/^\p{L}/u, (char) => char.toUpperCase())}
                 </span>
 
                 <div className="relative flex items-center">
-                  <div className="absolute right-0 mr-26 flex min-w-12 items-center justify-center">
+                  <div className="right-0 mr-2 flex min-w-12 flex-col items-center justify-center">
                     <WeatherIcon
-                      className="h-10 w-10 object-contain drop-shadow-sm"
+                      className="h-9 w-9 object-contain drop-shadow-sm"
                       code={day.weatherCode}
                       isDay={1}
                     />
+                    {precipitationCodes.includes(day.weatherCode) &&
+                      day.precipitationProbabilityMax > 10 && (
+                        <span className="text-sm font-semibold text-sky-400 dark:text-sky-200">{`${day.precipitationProbabilityMax}%`}</span>
+                      )}
                   </div>
 
-                  <div className="flex min-w-[72px] items-center gap-1 text-right text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex w-23 items-center justify-end gap-1 text-right text-sm text-gray-600 dark:text-gray-400">
                     <span className="text-gray-950 dark:text-cyan-50">
                       {formatTemperature(day.maxTemp, unitSystem)}
                     </span>

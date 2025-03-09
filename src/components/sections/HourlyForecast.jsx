@@ -120,7 +120,7 @@ const HourlyForecast = ({ data, isLoading, unitSystem }) => {
                         isDay={Number(hour.isDay)}
                       />
                       {precipitationCodes.includes(hour.weatherCode) && hour.precipitationProbability > 10 &&
-                      <span className="absolute bottom-0 w-full translate-y-full text-center text-sm font-semibold text-sky-300 dark:text-sky-200">
+                      <span className="absolute bottom-0 w-full translate-y-full text-center text-sm font-semibold text-sky-400 dark:text-sky-200">
                       {hour.precipitationProbability}%
                     </span>
                       }

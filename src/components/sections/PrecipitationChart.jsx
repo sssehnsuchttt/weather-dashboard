@@ -180,9 +180,16 @@ const PrecipitationChart = ({ data, isLoading, unitSystem }) => {
                                     hour.precipitation,
                                     unitSystem,
                                   ).split(" ")[0],
-                                ).toLocaleString(i18n.language)}
+                                ) < 0.01
+                                  ? `<${(0.01).toLocaleString(i18n.language)}`
+                                  : Number(
+                                      formatPrecipitation(
+                                        hour.precipitation,
+                                        unitSystem,
+                                      ).split(" ")[0],
+                                    ).toLocaleString(i18n.language)}
                               </span>
-                              <span className="font-semibold text-sky-300 dark:text-sky-200">
+                              <span className="font-semibold text-sky-400 dark:text-sky-200">
                                 {hour.precipitationProbability}%
                               </span>
                             </>

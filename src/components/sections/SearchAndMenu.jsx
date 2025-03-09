@@ -140,12 +140,11 @@ function SearchAndMenu({
                   value={searchValue}
                 />
                 <AnimatePresence>
-                {isSearchProcessing && (
-                  
+                  {isSearchProcessing && (
                     <motion.div
-                      initial={{scale: 0, opacity: 0}}
-                      animate={{scale: 1, opacity: 1}}
-                      exit={{scale: 0, opacity: 0}}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
                       role="status"
                       className="absolute top-1/2 right-0 mr-12 -translate-y-1/2"
                     >
@@ -167,8 +166,7 @@ function SearchAndMenu({
                       </svg>
                       <span className="sr-only">Loading...</span>
                     </motion.div>
-                  
-                )}
+                  )}
                 </AnimatePresence>
                 {/* searchbar close button */}
                 <div
@@ -189,7 +187,7 @@ function SearchAndMenu({
               {/* cities dropdown list */}
               <div
                 className={classNames(
-                  "absolute top-0 left-0 z-40 -m-4 mt-14 h-dvh w-screen pb-24 md:mx-0 md:max-h-120 md:w-full",
+                  "absolute top-0 left-0 z-40 mt-14 h-dvh w-screen -ml-4 md:mx-0 md:max-h-120 md:w-full",
                   !isSearchOpen && "pointer-events-none",
                 )}
               >
@@ -232,28 +230,34 @@ function SearchAndMenu({
                         staggerChildren: 0.02,
                       }}
                       className={classNames(
-                        "relative flex max-h-full origin-top flex-col items-start justify-between gap-2 overflow-y-hidden border-white px-4 md:gap-0 md:rounded-2xl md:border-t md:bg-slate-100 md:px-0 md:shadow-lg dark:border-white/20 md:dark:bg-slate-800",
+                        "relative flex max-h-full origin-top flex-col items-start justify-between gap-0 md:rounded-2xl md:p-0 md:shadow-lg overflow-hidden pb-4",
                         isMobile ? "" : "bg-grainy",
                       )}
                     >
-                      {(!cityList.length ? [
-                        {
-                          id: "current_geo",
-                          icon: "uil-map-marker",
-                          admin: "",
-                          city: t("current_location"),
-                        },
-                        ] :
-                        [
-                          ...cityList.map((city) => ({
-                            icon: city.id === "not_found" ? "uil-multiply" : "uil-search rotate-y-180",
-                            admin: city.id === "not_found" && t("not_found"),
-                            ...city,
-                          })),
-                        ]).map((item, index) => (
+                    <div className="w-full h-full overflow-y-auto  border-white md:rounded-2xl md:border-t md:bg-slate-100 dark:border-white/20 md:dark:bg-slate-800">
+                    {(!cityList.length
+                        ? [
+                            {
+                              id: "current_geo",
+                              icon: "uil-map-marker",
+                              admin: "",
+                              city: t("current_location"),
+                            },
+                          ]
+                        : [
+                            ...cityList.map((city) => ({
+                              icon:
+                                city.id === "not_found"
+                                  ? "uil-multiply"
+                                  : "uil-search rotate-y-180",
+                              admin: city.id === "not_found" && t("not_found"),
+                              ...city,
+                            })),
+                          ]
+                      ).map((item, index) => (
                         <div
                           key={index}
-                          className="overflow-y-фгещ flex w-full flex-col rounded-2xl transition-colors duration-400 ease-in-out md:rounded-none md:hover:bg-gray-600/10 md:dark:hover:bg-slate-300/20"
+                          className="flex w-full flex-col transition-colors duration-400 ease-in-out last:border-none md:rounded-none px-4 md:px-0 hover:bg-gray-600/10 dark:hover:bg-slate-300/20"
                         >
                           <motion.div
                             variants={
@@ -276,7 +280,7 @@ function SearchAndMenu({
                               ease: "easeInOut",
                               bounce: 0.3,
                             }}
-                            className="mt-2 flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-2xl bg-slate-50 p-4 px-4 py-0 text-base transition-colors duration-400 outline-none first:mt-0 md:mt-0 md:h-12 md:rounded-none md:bg-transparent md:text-sm dark:bg-slate-800 md:dark:bg-transparent"
+                            className="mt-2 flex min-h-14 w-full cursor-pointer items-center gap-2 p-4 px-4 py-0 text-base transition-colors duration-400 outline-none first:mt-0 md:mt-0 md:min-h-12 md:rounded-none md:bg-transparent md:text-sm md:dark:bg-transparent"
                             onClick={() => {
                               setIsSearchOpen(false);
                               setSearchValue("");
@@ -296,6 +300,7 @@ function SearchAndMenu({
                           </motion.div>
                         </div>
                       ))}
+                    </div>
                     </motion.div>
                   ) : null}
                 </AnimatePresence>

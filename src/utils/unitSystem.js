@@ -9,7 +9,7 @@ function formatTemperature(value, unitSystem) {
 function formatWindSpeed(value, unitSystem) {
   if (unitSystem === "imperial") {
     const mph = value * 2.237;
-    return `${mph.toFixed(1)} wind_speed_unit_mph`;
+    return `${mph.toFixed(0)} wind_speed_unit_mph`;
   }
   return `${value.toFixed(0)} wind_speed_unit_mps`;
 }
@@ -17,7 +17,7 @@ function formatWindSpeed(value, unitSystem) {
 function formatPressure(value, unitSystem) {
   if (unitSystem === "imperial") {
     const inHg = value * 0.02953;
-    return `${inHg.toFixed(2)} pressure_unit_inhg`;
+    return `${inHg.toFixed(1)} pressure_unit_inhg`;
   }
   return `${value.toFixed(0)} pressure_unit_mbar`;
 }
