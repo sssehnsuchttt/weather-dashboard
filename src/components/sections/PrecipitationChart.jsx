@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import PropTypes from "prop-types";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import Skeleton from "react-loading-skeleton";
 import classNames from "classnames";
 import { useTranslation } from "react-i18next";
 import { formatPrecipitation } from "../../utils/unitSystem";
 import i18n from "../../i18n";
-import { initial } from "lodash";
 
 const PrecipitationChart = ({ data, isLoading, unitSystem }) => {
   const { t } = useTranslation();
@@ -17,6 +16,9 @@ const PrecipitationChart = ({ data, isLoading, unitSystem }) => {
   const [itemWidth, setItemWidth] = useState(itemMaxWidth);
   const [hasAppeared, setHasAppeared] = useState(false);
   const [maxValue, setMaxValue] = useState(0);
+  const [skeletonHeights] = useState(
+    () => [...Array(24)].map(() => Math.abs(Math.sin(Math.random() * Math.PI * 2)) * 100)
+  );
 
   useEffect(() => {
     if (!isLoading) {
@@ -96,7 +98,7 @@ const PrecipitationChart = ({ data, isLoading, unitSystem }) => {
       >
         <div className="flex gap-2">
           {isLoading
-            ? [...Array(24)].map((_, i) => (
+            ? skeletonHeights.map((height, i) => (
                 <div key={i} className="mb-[6px] flex">
                   <div
                     className="flex h-full flex-col items-center justify-between"
@@ -109,7 +111,7 @@ const PrecipitationChart = ({ data, isLoading, unitSystem }) => {
                     <div className="relative mt-13 h-full w-full">
                       <Skeleton
                         style={{
-                          height: `${Math.abs(Math.sin((i / 24) * Math.PI * 2)) * 100 * Math.random()}%`,
+                          height: `${height}%`,
                           position: "absolute",
                           bottom: "0",
                           minHeight: "8px",
@@ -210,14 +212,20 @@ const PrecipitationChart = ({ data, isLoading, unitSystem }) => {
 };
 
 PrecipitationChart.propTypes = {
-  data: PropTypes.arrayOf(
-    PropTypes.shape({
-      time: PropTypes.string.isRequired,
-      precipitation: PropTypes.number.isRequired,
-    }),
-  ),
+  data: PropTypes.shape({
+    currentData: PropTypes.shape({
+      precipitationSum: PropTypes.number.isRequired,
+    }).isRequired,
+    hourlyData: PropTypes.arrayOf(
+      PropTypes.shape({
+        time: PropTypes.string.isRequired,
+        precipitation: PropTypes.number.isRequired,
+        precipitationProbability: PropTypes.number.isRequired,
+      }).isRequired
+    ).isRequired,
+  }).isRequired,
   isLoading: PropTypes.bool.isRequired,
-  unitSystem: PropTypes.string.isRequired,
+  unitSystem: PropTypes.oneOf(["metric", "imperial"]).isRequired,
 };
 
 export default PrecipitationChart;

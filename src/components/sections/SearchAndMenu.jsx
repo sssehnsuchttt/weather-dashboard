@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import classNames from "classnames"; // или ваш вариант classNames(...)
+import classNames from "classnames"; 
 import { motion, AnimatePresence } from "framer-motion";
 import ToggleSwitch from "../ui/ToggleSwitch";
 import DropdownMenu from "../ui/DropdownMenu";
 import MenuButton from "../ui/MenuButton";
 import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
-import Skeleton from "react-loading-skeleton";
 
 function SearchAndMenu({
   menuItems,
@@ -27,13 +26,20 @@ function SearchAndMenu({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMenuBgVisible, setIsMenuBgVisible] = useState(false);
   const [isSearchProcessing, setIsSearchProcessing] = useState(false);
-
+  const isFirstRenderRef = useRef(true);
+  const [isFirstRender, SetIsFirstRender] = useState(true);
   const { resolvedTheme, setTheme } = useTheme();
-  const toggleTheme = () =>
-    setTheme(resolvedTheme === "light" ? "dark" : "light");
   const pendingToggle = useRef(null);
   const [searchValue, setSearchValue] = useState("");
   const typingTimer = useRef(null);
+
+  useEffect(() => {
+    if (isFirstRenderRef.current) {
+      SetIsFirstRender(false);
+      console.log("ы")
+      isFirstRenderRef.current = false;
+    }
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("unit_system", unitSystem);
@@ -65,6 +71,9 @@ function SearchAndMenu({
     setIsSearchOpen(newState);
   }
 
+  const toggleTheme = () =>
+    setTheme(resolvedTheme === "light" ? "dark" : "light");
+
   function toggleMenu(forceState = null) {
     const newState = forceState !== null ? forceState : !isMenuOpen;
     if (newState && isSearchOpen) {
@@ -73,6 +82,12 @@ function SearchAndMenu({
       return;
     }
     setIsMenuOpen(newState);
+  }
+
+  function closeAll() {
+    setIsSearchOpen(false);
+    setIsMenuOpen(false);
+    onSearchClose();
   }
 
   function handleAnimationComplete() {
@@ -122,6 +137,7 @@ function SearchAndMenu({
             !isMenuOpen &&
             !isSearchOpen &&
             "bg-slate-300/10 shadow-lg backdrop-blur-lg dark:bg-gray-900/70",
+          !isFirstRender && "transition-all duration-400"
         )}
         data-active={!isMenuOpen}
       >
@@ -199,6 +215,7 @@ function SearchAndMenu({
                   "absolute top-0 left-0 z-40 mt-14 -ml-4 h-dvh w-screen md:mx-0 md:max-h-121 md:w-full",
                   !isSearchOpen && "pointer-events-none",
                 )}
+                onClick={closeAll}
               >
                 <AnimatePresence
                   onExitComplete={handleAnimationComplete}
@@ -430,6 +447,7 @@ function SearchAndMenu({
             ? "opacity-full backdrop-blur-xs"
             : "pointer-events-none opacity-0",
         )}
+        onClick={closeAll}
       ></div>
 
       <div
@@ -439,6 +457,7 @@ function SearchAndMenu({
             ? "opacity-full backdrop-blur-xs"
             : "pointer-events-none opacity-0",
         )}
+        onClick={closeAll}
       ></div>
     </>
   );
@@ -449,22 +468,32 @@ SearchAndMenu.propTypes = {
     PropTypes.shape({
       label: PropTypes.string.isRequired,
       onClick: PropTypes.func,
-    }),
+    })
   ).isRequired,
   scrollProgress: PropTypes.number.isRequired,
   cityList: PropTypes.arrayOf(
     PropTypes.shape({
-      text: PropTypes.string.isRequired,
-      subtext: PropTypes.string,
-    }),
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      city: PropTypes.string.isRequired,
+      admin: PropTypes.string,
+      icon: PropTypes.string,
+    })
   ).isRequired,
   onCitySelect: PropTypes.func.isRequired,
   onSearch: PropTypes.func,
-  isLoading: PropTypes.bool,
+  isLoading: PropTypes.bool.isRequired,
   unitSystem: PropTypes.oneOf(["si", "imperial"]).isRequired,
   onToggleUnitSystem: PropTypes.func.isRequired,
   isMobile: PropTypes.bool.isRequired,
   onSearchClose: PropTypes.func.isRequired,
+  searchHistory: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      city: PropTypes.string.isRequired,
+      admin: PropTypes.string,
+    })
+  ).isRequired,
 };
+
 
 export default SearchAndMenu;

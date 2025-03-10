@@ -127,7 +127,6 @@ const HourlyForecast = ({ data, isLoading, unitSystem }) => {
                     </div>
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {hour.time.slice(11, 16)}
-                      {/* {hour.precipitationProbability} */}
                     </span>
                   </motion.div>
                   {i < data.length - 1 && (

@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
-/**
- * Вертикальный индикатор с градиентной заливкой, анимацией и стрелкой-указателем.
- */
+
 const VerticalBarIndicator = ({
   value,
   height = 100,
@@ -14,7 +12,6 @@ const VerticalBarIndicator = ({
 }) => {
   const clampedValue = Math.max(0, Math.min(100, value));
 
-  // Анимированное значение
   const [animatedValue, setAnimatedValue] = useState(0);
   useEffect(() => {
     const timeout = setTimeout(() => setAnimatedValue(clampedValue), 100);

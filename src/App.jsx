@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import HourlyForecast from "./components/sections/HourlyForecast";
 import PrecipitationChart from "./components/sections/PrecipitationChart";
 import CurrentWeather from "./components/sections/CurrentWeather";
@@ -12,9 +12,12 @@ import { throttle } from "lodash";
 import i18n from "./i18n";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
+import { useDialog } from "./components/ui/Dialog";
 
+/*========== some configs and constants ==========*/
 const API_URL = "https://api.open-meteo.com/v1/forecast";
 const SEARCH_API_URL = "https://geocoding-api.open-meteo.com/v1/search";
+const SEARCH_BY_IP_URL = "http://ip-api.com/json";
 
 const languageNames = {
   en: "English",
@@ -23,7 +26,6 @@ const languageNames = {
   es: "Español",
   fr: "Français",
   zh: "中文 (简体)",
-  // ar: "العربية"
 };
 
 const menuItems = Object.keys(languageNames).map((lng) => ({
@@ -34,13 +36,70 @@ const menuItems = Object.keys(languageNames).map((lng) => ({
 }));
 
 function App() {
+  /*========== states and refs ==========*/
+  const [isLoading, setIsLoading] = useState(true);
+  const { resolvedTheme } = useTheme();
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const scrollProgressRef = useRef(0);
+  const scrollRef = useRef(null);
+  const isMobileRef = useRef(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const { t, i18n } = useTranslation();
+  const [cityList, setCityList] = useState([]);
+
+  const { openDialog } = useDialog();
+
+  const [searchHistory, setSearchHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("search_history")) || [];
+    } catch (error) {
+      console.error("Error parsing search history from localStorage:", error);
+      return [];
+    }
+  });
+  const [selectedCity, setSelectedCity] = useState(null);
+  const [unitSystem, setUnitSystem] = useState(
+    localStorage.getItem("unit_system") || "si",
+  );
+  const [previousSyncDate, setPreviousSyncDate] = useState(
+    Number(localStorage.getItem("previous_sync_date")) || 0,
+  );
+
+  /*========== API and LocalStorage Functions ==========*/
+  const getCityByIP = async () => {
+    try {
+      const response = await axios.get(
+        `${SEARCH_BY_IP_URL}/?fields=61407&lang=${i18n.language}`,
+      );
+
+      if (response.data.status === "success") {
+        return {
+          id: `ip_${response.data.query}`,
+          saveInHistory: false,
+          city: response.data.city,
+          admin: "",
+          country: response.data.countryCode,
+          latitude: response.data.lat,
+          longitude: response.data.lon,
+        };
+      }
+
+      throw new Error("Failed to get location from IP");
+    } catch (error) {
+      console.error("Error fetching location by IP:", error);
+      return null;
+    }
+  };
+
   const getValidCityData = () => {
     try {
       const storedData = localStorage.getItem("selected_city");
       if (!storedData) throw new Error("Empty city localStorage data");
-  
+
       const parsedData = JSON.parse(storedData);
-  
+
       if (
         !parsedData ||
         typeof parsedData !== "object" ||
@@ -51,75 +110,23 @@ function App() {
       ) {
         throw new Error("Corrupted city data");
       }
-  
+
       return parsedData;
     } catch (error) {
-      console.warn("An error occurred while loading data from localStorage", error.message);
+      console.warn(
+        "An error occurred while loading data from localStorage",
+        error.message,
+      );
       return {
-        admin: "Россия, ",
+        admin: "Russia, ",
         saveInHistory: false,
-        id: 524901,
-        city: "Москва",
+        id: "fallback",
+        city: "Moscow",
         latitude: 55.75222,
         longitude: 37.61556,
-      }; 
+      };
     }
   };
-
-  const [isLoading, setIsLoading] = useState(true);
-  const { resolvedTheme } = useTheme();
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const scrollRef = useRef(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
-  const { t, i18n } = useTranslation();
-  const [cityList, setCityList] = useState([]);
-  const [searchHistory, setSearchHistory] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("search_history")) || [];
-    } catch (error) {
-      console.error("Error parsing search history from localStorage:", error);
-      return [];
-    }
-  });
-  
-  const [selectedCity, setSelectedCity] = useState(getValidCityData());
-  const [unitSystem, setUnitSystem] = useState(
-    localStorage.getItem("unit_system") || "si",
-  );
-
-  useEffect(() => {
-    if (!selectedCity || !selectedCity.id || !selectedCity.saveInHistory) return;
-  
-    setSearchHistory((prevHistory) => {
-      const historyArray = Array.isArray(prevHistory) ? prevHistory : [];
-  
-      const filteredHistory = historyArray.filter(city => city.id !== selectedCity.id);
-  
-      const updatedHistory = [selectedCity, ...filteredHistory].slice(0, 9); 
-  
-      localStorage.setItem("search_history", JSON.stringify(updatedHistory));
-  
-      return updatedHistory;
-    });
-  }, [selectedCity]);
-
-  const [previousSyncDate, setPreviousSyncDate] = useState(
-    Number(localStorage.getItem("previous_sync_date")) || 0,
-  );
-
-  useEffect(() => {
-    if (selectedCity) {
-      localStorage.setItem("selected_city", JSON.stringify(selectedCity));
-    }
-  }, [selectedCity]);
-
-  useEffect(() => {
-    if (data) {
-      localStorage.setItem("weather_data", JSON.stringify(data));
-    }
-  }, [data])
 
   const SearchCity = async (name) => {
     const namesList = name
@@ -172,9 +179,155 @@ function App() {
     }
   };
 
+  const getCityByCoords = async (latitude, longitude) => {
+    const cacheKey = `geo_cached`;
+    const cachedData = localStorage.getItem(cacheKey);
+    const lastFetchTime = localStorage.getItem(`${cacheKey}_time`);
+
+    if (cachedData && lastFetchTime && Date.now() - lastFetchTime < 30000) {
+      return JSON.parse(cachedData);
+    }
+
+    try {
+      const response = await axios.get(
+        `https://nominatim.openstreetmap.org/reverse`,
+        {
+          params: {
+            lat: latitude,
+            lon: longitude,
+            format: "json",
+            zoom: 10,
+            addressdetails: 1,
+            "accept-language": i18n.language,
+          },
+          headers: {
+            Referer: "https://sssehnsuchttt.github.io/weather-dashboard",
+          },
+        },
+      );
+
+      if (response.data && response.data.address) {
+        const cityData = {
+          id: response.data.place_id,
+          saveInHistory: false,
+          city:
+            response.data.address.city ||
+            response.data.address.town ||
+            response.data.address.village ||
+            t("unknown_location"),
+          admin: response.data.address.state || "",
+          country: response.data.address.country || "",
+          latitude,
+          longitude,
+        };
+
+        localStorage.setItem(cacheKey, JSON.stringify(cityData));
+        localStorage.setItem(`${cacheKey}_time`, Date.now());
+
+        return cityData;
+      }
+
+      throw new Error("Unable to find city by coordinates");
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      return null;
+    }
+  };
+
+  const getUserLocation = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject({
+          code: "geolocation_error_unsupported",
+          message: "Geolocation is not supported by your browser",
+        });
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+        (error) => {
+          let errorCode = "geolocation_error_unknown";
+
+          switch (error.code) {
+            case GeolocationPositionError.PERMISSION_DENIED:
+              errorCode = "geolocation_error_1";
+              break;
+            case GeolocationPositionError.POSITION_UNAVAILABLE:
+              errorCode = "geolocation_error_2";
+              break;
+            case GeolocationPositionError.TIMEOUT:
+              errorCode = "geolocation_error_3";
+              break;
+          }
+
+          reject({ code: errorCode, message: error.message });
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+      );
+    });
+  };
+
   useEffect(() => {
+    const fetchCityData = async () => {
+      let cityData = getValidCityData();
+
+      if (cityData.id === "fallback") {
+        const cityFromIP = await getCityByIP();
+        if (cityFromIP) {
+          cityData = cityFromIP;
+        }
+      }
+
+      setSelectedCity(cityData);
+    };
+
+    fetchCityData();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedCity || !selectedCity.id || !selectedCity.saveInHistory)
+      return;
+
+    setSearchHistory((prevHistory) => {
+      const historyArray = Array.isArray(prevHistory) ? prevHistory : [];
+
+      const filteredHistory = historyArray.filter(
+        (city) => city.id !== selectedCity.id,
+      );
+
+      const updatedHistory = [selectedCity, ...filteredHistory].slice(0, 9);
+
+      localStorage.setItem("search_history", JSON.stringify(updatedHistory));
+
+      return updatedHistory;
+    });
+  }, [selectedCity]);
+
+  useEffect(() => {
+    if (selectedCity) {
+      localStorage.setItem("selected_city", JSON.stringify(selectedCity));
+    }
+  }, [selectedCity]);
+
+  useEffect(() => {
+    if (data) {
+      localStorage.setItem("weather_data", JSON.stringify(data));
+    }
+  }, [data]);
+
+  /*========== hooks ==========*/
+  useEffect(() => {
+    if (!selectedCity || !selectedCity.latitude || !selectedCity.longitude)
+      return;
+
     const fetchData = async () => {
-      if (!(((Date.now() / 1000) - previousSyncDate) < 60)) {
+      if (!(Date.now() / 1000 - previousSyncDate < 60)) {
         setData(JSON.parse(localStorage.getItem("weather_data")));
         setIsLoading(false);
       }
@@ -266,116 +419,75 @@ function App() {
     fetchData();
   }, [selectedCity]);
 
+  const handleResize = useMemo(
+    () =>
+      throttle(() => {
+        const newIsMobile = window.innerWidth < 768;
+
+        if (isMobileRef.current !== newIsMobile) {
+          isMobileRef.current = newIsMobile;
+          setIsMobile(newIsMobile);
+        }
+      }, 200),
+    [],
+  );
+
+  useEffect(() => {
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [handleResize]);
+
+  const handleScroll = useMemo(
+    () =>
+      throttle(() => {
+        if (!scrollRef.current) return;
+
+        const scrollTop = scrollRef.current.scrollTop;
+        const scrollHeight =
+          scrollRef.current.scrollHeight - scrollRef.current.clientHeight;
+        const newScrollProgress =
+          Math.floor(((scrollTop / scrollHeight) * 100) / 5) * 5;
+
+        if (scrollProgressRef.current !== newScrollProgress) {
+          scrollProgressRef.current = newScrollProgress;
+          setScrollProgress(newScrollProgress);
+        }
+      }, 100),
+    [scrollRef, setScrollProgress],
+  );
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
+
+  /*========== event handlers ==========*/
   const toggleUnitSystem = () =>
     setUnitSystem(unitSystem === "si" ? "imperial" : "si");
 
-  const handleScroll = () => {
-    const scrollTop = scrollRef.current.scrollTop;
-    const scrollHeight =
-      scrollRef.current.scrollHeight - scrollRef.current.clientHeight;
-    setScrollProgress(Math.floor(((scrollTop / scrollHeight) * 100) / 5) * 5);
-  };
-
-  useEffect(() => {
-    const handleResize = throttle(() => {
-      setIsMobile(window.innerWidth < 768);
-    }, 200);
-
-    window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      handleResize.cancel && handleResize.cancel();
-    };
-  }, []);
-
-  const getCityByCoords = async (latitude, longitude) => {
-    const cacheKey = `geo_cache_${latitude}_${longitude}`;
-    const cachedData = localStorage.getItem(cacheKey);
-    const lastFetchTime = localStorage.getItem(`${cacheKey}_time`);
-  
-    if (cachedData && lastFetchTime && Date.now() - lastFetchTime < 30000) {
-      return JSON.parse(cachedData);
-    }
-  
-  
-    try {
-      const response = await axios.get(`https://nominatim.openstreetmap.org/reverse`, {
-        params: {
-          lat: latitude,
-          lon: longitude,
-          format: "json",
-          zoom: 10,
-          addressdetails: 1,
-          "accept-language": i18n.language,
-        },
-        headers: {
-          "User-Agent": "WeatherDashboard/1.0 (https://github.com/sssehnsuchttt/weather-dashboard)",
-        },
-      });
-  
-      if (response.data && response.data.address) {
-        const cityData = {
-          id: response.data.place_id,
-          saveInHistory: false,
-          city: response.data.address.city || response.data.address.town || response.data.address.village || t("unknown_location"),
-          admin: response.data.address.state || "",
-          country: response.data.address.country || "",
-          latitude,
-          longitude,
-        };
-  
-        localStorage.setItem(cacheKey, JSON.stringify(cityData));
-        localStorage.setItem(`${cacheKey}_time`, Date.now());
-  
-        return cityData;
-      }
-  
-      throw new Error("Unable to find city by coordinates");
-    } catch (error) {
-      console.error("Geocoding error:", error);
-      return null;
-    }
-  };
-  
-
-  
-  const getUserLocation = () => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error("Geolocation is not supported by your browser"));
-        return;
-      }
-  
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          resolve({ latitude, longitude });
-        },
-        (error) => {
-          reject(new Error(`Error getting geolocation: ${error.message}`));
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-      );
-    });
-  };
-
   const handleCitySelect = async (city) => {
+    if (selectedCity?.id === city.id) return;
+  
     setIsLoading(true);
     setCityList([]);
   
     if (city.id === "current_geo") {
       try {
         const { latitude, longitude } = await getUserLocation();
-
-        console.log(await getCityByCoords(latitude, longitude));
         const nearestCity = await getCityByCoords(latitude, longitude);
-        
+  
         if (nearestCity) {
           setSelectedCity(nearestCity);
           localStorage.setItem("selected_city", JSON.stringify(nearestCity));
         }
       } catch (error) {
         console.error("Location error:", error);
+  
+        openDialog({
+          title: t("geolocation_error_title"),
+          message: t(error.code), // Теперь код ошибки берется из getUserLocation
+          buttons: [{ text: "OK", variant: "primary" }],
+        });
       }
     } else {
       setSelectedCity(city);

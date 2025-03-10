@@ -89,5 +89,12 @@
   "weather_code_86": "Heavy snow shower",
   "weather_code_95": "Thunderstorm",
   "weather_code_96": "Storm with hail",
-  "weather_code_99": "Severe storm with hail"
+  "weather_code_99": "Severe storm with hail",
+  "geolocation_error_1": "You denied access to geolocation. Please allow access in the browser settings",
+  "geolocation_error_2": "Unable to determine location. Check your connection or try again later",
+  "geolocation_error_3": "Geolocation request took too long. Please try again",
+  "geolocation_error_unknown": "Unknown geolocation error",
+  "geolocation_error_title": "Geolocation Error",
+  "unknown_location": "Unknown location",
+  "ok_button": "OK"
 }

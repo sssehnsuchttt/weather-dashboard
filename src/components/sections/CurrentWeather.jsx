@@ -4,6 +4,7 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { formatTemperature } from "../../utils/unitSystem";
 import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
 
 const CurrentWeather = ({ data, isLoading, unitSystem }) => {
   const { t, i18n } = useTranslation();
@@ -69,12 +70,18 @@ const CurrentWeather = ({ data, isLoading, unitSystem }) => {
             {isLoading ? (
               <Skeleton width={96} height={96} />
             ) : (
-              <WeatherIcon
+              <motion.div
+              initial={{y: 15, opacity: 0}}
+              animate={{y: 0, opacity: 1}}
+              transition={{duration: 0.8, type: "spring", bounce: 0.4, visualDuration: 0.8}}
+              >
+                <WeatherIcon
                 className="h-24 w-24 drop-shadow-sm"
                 code={data.weatherCode}
                 isDay={data.isDay}
                 glow
               />
+              </motion.div>
             )}
           </div>
         </div>
