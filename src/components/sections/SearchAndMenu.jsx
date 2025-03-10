@@ -36,7 +36,6 @@ function SearchAndMenu({
   useEffect(() => {
     if (isFirstRenderRef.current) {
       SetIsFirstRender(false);
-      console.log("ы")
       isFirstRenderRef.current = false;
     }
   }, []);
