@@ -89,5 +89,12 @@
   "weather_code_86": "Starker Schneeschauer",
   "weather_code_95": "Gewitter",
   "weather_code_96": "Sturm mit Hagel",
-  "weather_code_99": "Schwerer Sturm mit Hagel"
+  "weather_code_99": "Schwerer Sturm mit Hagel",
+  "geolocation_error_1": "Sie haben den Zugriff auf die Standortbestimmung verweigert. Bitte erlauben Sie den Zugriff in den Browser-Einstellungen.",
+  "geolocation_error_2": "Der Standort konnte nicht bestimmt werden. Überprüfen Sie Ihre Verbindung oder versuchen Sie es später erneut.",
+  "geolocation_error_3": "Die Standortanfrage hat zu lange gedauert. Bitte versuchen Sie es erneut.",
+  "geolocation_error_unknown": "Unbekannter Standortfehler.",
+  "geolocation_error_title": "Standortfehler",
+  "unknown_location": "Unbekannter Standort",
+  "ok_button": "OK"
 }

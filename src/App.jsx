@@ -273,6 +273,8 @@ function App() {
     });
   };
 
+  /*========== hooks ==========*/
+  
   useEffect(() => {
     const fetchCityData = async () => {
       let cityData = getValidCityData();
@@ -321,7 +323,6 @@ function App() {
     }
   }, [data]);
 
-  /*========== hooks ==========*/
   useEffect(() => {
     if (!selectedCity || !selectedCity.latitude || !selectedCity.longitude)
       return;
@@ -466,7 +467,7 @@ function App() {
     setUnitSystem(unitSystem === "si" ? "imperial" : "si");
 
   const handleCitySelect = async (city) => {
-    if (selectedCity?.id === city.id) return;
+    if (selectedCity?.id === city.id && selectedCity?.city === city.city) return;
   
     setIsLoading(true);
     setCityList([]);
@@ -485,7 +486,7 @@ function App() {
   
         openDialog({
           title: t("geolocation_error_title"),
-          message: t(error.code), // Теперь код ошибки берется из getUserLocation
+          message: t(error.code), 
           buttons: [{ text: "OK", variant: "primary" }],
         });
       }
