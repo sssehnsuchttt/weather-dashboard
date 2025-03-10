@@ -57,6 +57,7 @@ function App() {
       console.warn("An error occurred while loading data from localStorage", error.message);
       return {
         admin: "Россия, ",
+        saveInHistory: false,
         id: 524901,
         city: "Москва",
         latitude: 55.75222,
@@ -72,7 +73,7 @@ function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [cityList, setCityList] = useState([]);
   const [searchHistory, setSearchHistory] = useState(() => {
     try {
@@ -89,7 +90,7 @@ function App() {
   );
 
   useEffect(() => {
-    if (!selectedCity || !selectedCity.id) return;
+    if (!selectedCity || !selectedCity.id || !selectedCity.saveInHistory) return;
   
     setSearchHistory((prevHistory) => {
       const historyArray = Array.isArray(prevHistory) ? prevHistory : [];
@@ -149,6 +150,7 @@ function App() {
 
             return {
               id: city.id,
+              saveInHistory: true,
               admin: adminParts.length > 0 ? adminParts.join(", ") + ", " : "",
               city: city.name,
               latitude: city.latitude,
@@ -254,8 +256,8 @@ function App() {
             })),
         });
       } catch (err) {
-        console.error("Ошибка загрузки данных:", err);
-        setError("Не удалось загрузить данные. Попробуйте позже.");
+        console.error("Error loading data:", err);
+        setError("Failed to load data. Please try again later");
       } finally {
         setIsLoading(false);
       }
@@ -286,10 +288,61 @@ function App() {
     };
   }, []);
 
+  const getCityByCoords = async (latitude, longitude) => {
+    const cacheKey = `geo_cache_${latitude}_${longitude}`;
+    const cachedData = localStorage.getItem(cacheKey);
+    const lastFetchTime = localStorage.getItem(`${cacheKey}_time`);
+  
+    if (cachedData && lastFetchTime && Date.now() - lastFetchTime < 30000) {
+      return JSON.parse(cachedData);
+    }
+  
+  
+    try {
+      const response = await axios.get(`https://nominatim.openstreetmap.org/reverse`, {
+        params: {
+          lat: latitude,
+          lon: longitude,
+          format: "json",
+          zoom: 10,
+          addressdetails: 1,
+          "accept-language": i18n.language,
+        },
+        headers: {
+          "User-Agent": "WeatherDashboard/1.0 (https://github.com/sssehnsuchttt/weather-dashboard)",
+        },
+      });
+  
+      if (response.data && response.data.address) {
+        const cityData = {
+          id: response.data.place_id,
+          saveInHistory: false,
+          city: response.data.address.city || response.data.address.town || response.data.address.village || t("unknown_location"),
+          admin: response.data.address.state || "",
+          country: response.data.address.country || "",
+          latitude,
+          longitude,
+        };
+  
+        localStorage.setItem(cacheKey, JSON.stringify(cityData));
+        localStorage.setItem(`${cacheKey}_time`, Date.now());
+  
+        return cityData;
+      }
+  
+      throw new Error("Unable to find city by coordinates");
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      return null;
+    }
+  };
+  
+
+  
   const getUserLocation = () => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject(new Error("Геолокация не поддерживается вашим браузером"));
+        reject(new Error("Geolocation is not supported by your browser"));
         return;
       }
   
@@ -299,7 +352,7 @@ function App() {
           resolve({ latitude, longitude });
         },
         (error) => {
-          reject(new Error(`Ошибка при получении геолокации: ${error.message}`));
+          reject(new Error(`Error getting geolocation: ${error.message}`));
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
       );
@@ -314,15 +367,15 @@ function App() {
       try {
         const { latitude, longitude } = await getUserLocation();
 
-        console.log(latitude, longitude);
-        // const nearestCity = await getCityByCoords(latitude, longitude);
+        console.log(await getCityByCoords(latitude, longitude));
+        const nearestCity = await getCityByCoords(latitude, longitude);
         
-        // if (nearestCity) {
-        //   setSelectedCity(nearestCity);
-        //   localStorage.setItem("selected_city", JSON.stringify(nearestCity));
-        // }
+        if (nearestCity) {
+          setSelectedCity(nearestCity);
+          localStorage.setItem("selected_city", JSON.stringify(nearestCity));
+        }
       } catch (error) {
-        console.error("Ошибка определения местоположения:", error);
+        console.error("Location error:", error);
       }
     } else {
       setSelectedCity(city);
