@@ -52,7 +52,7 @@ const PrecipitationChart = ({ data, isLoading, unitSystem }) => {
   }, [updateItemsPerRow]);
 
   return (
-    <div className="bg-grainy relative flex h-75 max-h-150 min-h-20 flex-col overflow-hidden rounded-2xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg md:h-full dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
+    <div className="bg-grainy relative flex h-75 max-h-150 flex-col overflow-hidden rounded-2xl border-t border-white bg-gradient-to-b from-slate-100 to-sky-50 p-4 shadow-lg md:min-h-80 md:flex-1 dark:border-white/20 dark:from-slate-900 dark:to-slate-800">
       <h2 className="mb-2 text-sm text-gray-600 dark:text-gray-400">
         {isLoading ? (
           <Skeleton width={140} />

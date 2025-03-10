@@ -34,20 +34,6 @@ const menuItems = Object.keys(languageNames).map((lng) => ({
 }));
 
 function App() {
-  const [isLoading, setIsLoading] = useState(true);
-  const { resolvedTheme } = useTheme();
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const scrollRef = useRef(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
-  const { i18n } = useTranslation();
-  const [cityList, setCityList] = useState([]);
-
-  const [previousSyncDate, setPreviousSyncDate] = useState(
-    Number(localStorage.getItem("previous_sync_date")) || 0,
-  );
-  
   const getValidCityData = () => {
     try {
       const storedData = localStorage.getItem("selected_city");
@@ -78,12 +64,48 @@ function App() {
       }; 
     }
   };
+
+  const [isLoading, setIsLoading] = useState(true);
+  const { resolvedTheme } = useTheme();
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const scrollRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const { i18n } = useTranslation();
+  const [cityList, setCityList] = useState([]);
+  const [searchHistory, setSearchHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("search_history")) || [];
+    } catch (error) {
+      console.error("Error parsing search history from localStorage:", error);
+      return [];
+    }
+  });
   
   const [selectedCity, setSelectedCity] = useState(getValidCityData());
-  
-
   const [unitSystem, setUnitSystem] = useState(
     localStorage.getItem("unit_system") || "si",
+  );
+
+  useEffect(() => {
+    if (!selectedCity || !selectedCity.id) return;
+  
+    setSearchHistory((prevHistory) => {
+      const historyArray = Array.isArray(prevHistory) ? prevHistory : [];
+  
+      const filteredHistory = historyArray.filter(city => city.id !== selectedCity.id);
+  
+      const updatedHistory = [selectedCity, ...filteredHistory].slice(0, 9); 
+  
+      localStorage.setItem("search_history", JSON.stringify(updatedHistory));
+  
+      return updatedHistory;
+    });
+  }, [selectedCity]);
+
+  const [previousSyncDate, setPreviousSyncDate] = useState(
+    Number(localStorage.getItem("previous_sync_date")) || 0,
   );
 
   useEffect(() => {
@@ -264,13 +286,52 @@ function App() {
     };
   }, []);
 
-  const handleCitySelect = (city) => {
-    if (city.id !== "not_found") {
-      setSelectedCity(city);
-      setIsLoading(true);
-    }
-    setCityList([]);
+  const getUserLocation = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Геолокация не поддерживается вашим браузером"));
+        return;
+      }
+  
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          resolve({ latitude, longitude });
+        },
+        (error) => {
+          reject(new Error(`Ошибка при получении геолокации: ${error.message}`));
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    });
   };
+
+  const handleCitySelect = async (city) => {
+    setIsLoading(true);
+    setCityList([]);
+  
+    if (city.id === "current_geo") {
+      try {
+        const { latitude, longitude } = await getUserLocation();
+
+        console.log(latitude, longitude);
+        // const nearestCity = await getCityByCoords(latitude, longitude);
+        
+        // if (nearestCity) {
+        //   setSelectedCity(nearestCity);
+        //   localStorage.setItem("selected_city", JSON.stringify(nearestCity));
+        // }
+      } catch (error) {
+        console.error("Ошибка определения местоположения:", error);
+      }
+    } else {
+      setSelectedCity(city);
+      localStorage.setItem("selected_city", JSON.stringify(city));
+    }
+  
+    setIsLoading(false);
+  };
+  
 
   const handleSearch = (value) => {
     SearchCity(value);
@@ -335,6 +396,7 @@ function App() {
             onToggleUnitSystem={toggleUnitSystem}
             isMobile={isMobile}
             onSearchClose={() => setCityList([])}
+            searchHistory={searchHistory}
           />
         </div>
       </div>

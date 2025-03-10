@@ -20,6 +20,7 @@ function SearchAndMenu({
   onToggleUnitSystem,
   isMobile,
   onSearchClose,
+  searchHistory,
 }) {
   const { t, i18n } = useTranslation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -88,17 +89,25 @@ function SearchAndMenu({
   function handleSearchChange(e) {
     const value = e.target.value;
     setSearchValue(value);
-
+  
     if (typingTimer.current) {
       clearTimeout(typingTimer.current);
     }
+  
     setIsSearchProcessing(true);
+  
     typingTimer.current = setTimeout(() => {
-      if (onSearch && value) {
-        onSearch(value);
+      if (value.trim().length > 0) {
+        if (onSearch) {
+          onSearch(value.trim());
+        }
+      } else {
+        onSearchClose();
+        setIsSearchProcessing(false);
       }
     }, 1000);
   }
+  
 
   return (
     <>
@@ -187,7 +196,7 @@ function SearchAndMenu({
               {/* cities dropdown list */}
               <div
                 className={classNames(
-                  "absolute top-0 left-0 z-40 mt-14 h-dvh w-screen -ml-4 md:mx-0 md:max-h-120 md:w-full",
+                  "absolute top-0 left-0 z-40 mt-14 -ml-4 h-dvh w-screen md:mx-0 md:max-h-121 md:w-full",
                   !isSearchOpen && "pointer-events-none",
                 )}
               >
@@ -230,77 +239,86 @@ function SearchAndMenu({
                         staggerChildren: 0.02,
                       }}
                       className={classNames(
-                        "relative flex max-h-full origin-top flex-col items-start justify-between gap-0 md:rounded-2xl md:p-0 md:shadow-lg overflow-hidden pb-4",
+                        "relative flex max-h-full origin-top flex-col items-start justify-between gap-0 overflow-hidden pb-4 md:rounded-2xl md:p-0 md:shadow-lg",
                         isMobile ? "" : "bg-grainy",
                       )}
                     >
-                    <div className="w-full h-full overflow-y-auto  border-white md:rounded-2xl md:border-t md:bg-slate-100 dark:border-white/20 md:dark:bg-slate-800">
-                    {(!cityList.length
-                        ? [
-                            {
-                              id: "current_geo",
-                              icon: "uil-map-marker",
-                              admin: "",
-                              city: t("current_location"),
-                            },
-                          ]
-                        : [
-                            ...cityList.map((city) => ({
-                              icon:
-                                city.id === "not_found"
-                                  ? "uil-multiply"
-                                  : "uil-search rotate-y-180",
-                              admin: city.id === "not_found" && t("not_found"),
-                              ...city,
-                            })),
-                          ]
-                      ).map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex w-full flex-col transition-colors duration-400 ease-in-out last:border-none md:rounded-none px-4 md:px-0 hover:bg-gray-600/10 dark:hover:bg-slate-300/20"
-                        >
-                          <motion.div
-                            variants={
-                              isMobile
-                                ? {
-                                    hidden: { opacity: 0.5, scale: 0.8, y: 10 },
-                                    visible: { opacity: 1, scale: 1, y: 0 },
-                                    exit: { opacity: 0.5, scale: 0.8, y: 10 },
-                                  }
-                                : {
-                                    hidden: { opacity: 0.5, scale: 1, y: 10 },
-                                    visible: { opacity: 1, scale: 1, y: 0 },
-                                    exit: { opacity: 0.5, scale: 1, y: 10 },
-                                  }
-                            }
-                            transition={{
-                              type: "spring",
-                              duration: 0.4,
-                              visualDuration: 0.4,
-                              ease: "easeInOut",
-                              bounce: 0.3,
-                            }}
-                            className="mt-2 flex min-h-14 w-full cursor-pointer items-center gap-2 p-4 px-4 py-0 text-base transition-colors duration-400 outline-none first:mt-0 md:mt-0 md:min-h-12 md:rounded-none md:bg-transparent md:text-sm md:dark:bg-transparent"
-                            onClick={() => {
-                              setIsSearchOpen(false);
-                              setSearchValue("");
-                              setIsSearchProcessing(false);
-                              onCitySelect?.(item);
-                            }}
+                      <div className="h-full w-full overflow-y-auto border-white md:rounded-2xl md:border-t md:bg-slate-100 dark:border-white/20 md:dark:bg-slate-800">
+                        {(!cityList.length
+                          ? [
+                              {
+                                id: "current_geo",
+                                icon: "uil-map-marker",
+                                admin: "",
+                                city: t("current_location"),
+                              },
+                              ...searchHistory.map((city) => ({
+                                ...city,
+                                icon: "uil-history",
+                              })),
+                            ]
+                          : [
+                              ...cityList.map((city) => ({
+                                icon:
+                                  city.id === "not_found"
+                                    ? "uil-multiply"
+                                    : "uil-search rotate-y-180",
+                                admin:
+                                  city.id === "not_found" && t("not_found"),
+                                ...city,
+                              })),
+                            ]
+                        ).map((item, index) => (
+                          <div
+                            key={index}
+                            className="flex w-full flex-col px-4 transition-colors duration-400 ease-in-out last:border-none hover:bg-gray-600/10 md:rounded-none md:px-0 dark:hover:bg-slate-300/20"
                           >
-                            <i
-                              className={`uil h-fit w-fit ${item.icon} text-xl text-gray-600 dark:text-gray-400`}
-                            ></i>
-                            <span className="font-medium text-gray-600 dark:text-gray-400">
-                              {item.admin}
-                              <span className="font-normal text-black dark:text-cyan-50">
-                                {item.city}
+                            <motion.div
+                              variants={
+                                isMobile
+                                  ? {
+                                      hidden: {
+                                        opacity: 0.5,
+                                        scale: 0.8,
+                                        y: 10,
+                                      },
+                                      visible: { opacity: 1, scale: 1, y: 0 },
+                                      exit: { opacity: 0.5, scale: 0.8, y: 10 },
+                                    }
+                                  : {
+                                      hidden: { opacity: 0.5, scale: 1, y: 10 },
+                                      visible: { opacity: 1, scale: 1, y: 0 },
+                                      exit: { opacity: 0.5, scale: 1, y: 10 },
+                                    }
+                              }
+                              transition={{
+                                type: "spring",
+                                duration: 0.4,
+                                visualDuration: 0.4,
+                                ease: "easeInOut",
+                                bounce: 0.3,
+                              }}
+                              className="mt-2 flex min-h-14 w-full cursor-pointer items-center gap-2 p-4 px-4 py-0 text-base transition-colors duration-400 outline-none first:mt-0 md:mt-0 md:min-h-12 md:rounded-none md:bg-transparent md:text-sm md:dark:bg-transparent"
+                              onClick={() => {
+                                setIsSearchOpen(false);
+                                setSearchValue("");
+                                setIsSearchProcessing(false);
+                                onCitySelect?.(item);
+                              }}
+                            >
+                              <i
+                                className={`uil h-fit w-fit ${item.icon} text-xl text-gray-600 dark:text-gray-400`}
+                              ></i>
+                              <span className="font-medium text-gray-600 dark:text-gray-400">
+                                {item.admin}
+                                <span className="font-normal text-black dark:text-cyan-50">
+                                  {item.city}
+                                </span>
                               </span>
-                            </span>
-                          </motion.div>
-                        </div>
-                      ))}
-                    </div>
+                            </motion.div>
+                          </div>
+                        ))}
+                      </div>
                     </motion.div>
                   ) : null}
                 </AnimatePresence>
