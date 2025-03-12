@@ -17,7 +17,7 @@ import { useDialog } from "./components/ui/Dialog";
 /*========== some configs and constants ==========*/
 const API_URL = "https://api.open-meteo.com/v1/forecast";
 const SEARCH_API_URL = "https://geocoding-api.open-meteo.com/v1/search";
-const SEARCH_BY_IP_URL = "http://ip-api.com/json";
+const SEARCH_BY_IP_URL = "https://ipwho.is";
 
 const languageNames = {
   en: "English",
@@ -70,29 +70,27 @@ function App() {
   /*========== API and LocalStorage Functions ==========*/
   const getCityByIP = async () => {
     try {
-      const response = await axios.get(
-        `${SEARCH_BY_IP_URL}/?fields=61407&lang=${i18n.language}`,
-      );
-
-      if (response.data.status === "success") {
+      const response = await axios.get(`${SEARCH_BY_IP_URL}/?lang=${i18n.language}`);
+  
+      if (response.data.success) {
         return {
-          id: `ip_${response.data.query}`,
+          id: `ip_${response.data.ip}`,
           saveInHistory: false,
           city: response.data.city,
-          admin: "",
-          country: response.data.countryCode,
-          latitude: response.data.lat,
-          longitude: response.data.lon,
+          admin: response.data.region,
+          country: response.data.country_code,
+          latitude: response.data.latitude,
+          longitude: response.data.longitude,
         };
       }
-
+  
       throw new Error("Failed to get location from IP");
     } catch (error) {
       console.error("Error fetching location by IP:", error);
       return null;
     }
   };
-
+  
   const getValidCityData = () => {
     try {
       const storedData = localStorage.getItem("selected_city");
