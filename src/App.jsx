@@ -212,6 +212,7 @@ function App() {
             response.data.address.city ||
             response.data.address.town ||
             response.data.address.village ||
+            response.data.address.county ||
             t("unknown_location"),
           admin: response.data.address.state || "",
           country: response.data.address.country || "",
