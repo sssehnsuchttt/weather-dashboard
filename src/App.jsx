@@ -194,7 +194,7 @@ function App() {
             lat: latitude,
             lon: longitude,
             format: "json",
-            zoom: 10,
+            zoom: 13,
             addressdetails: 1,
             "accept-language": i18n.language,
           },
