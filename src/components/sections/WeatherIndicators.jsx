@@ -186,7 +186,7 @@ const WeatherIndicators = ({ data, isLoading, unitSystem, isMobile}) => {
                   key={isMobile}
                   value={data.pressure}
                   minValue={950}
-                  maxValue={1050}
+                  maxValue={1070}
                   size={isMobile ? 60 : 75}
                   width={10}
                   arcAngle={240}
