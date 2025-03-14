@@ -363,7 +363,7 @@ function App() {
             humidity: response.data.current.relative_humidity_2m,
             pressure: response.data.current.pressure_msl,
             uvIndex: response.data.daily.uv_index_max[0],
-            windSpeed: response.data.current.wind_speed_10m,
+            windSpeed: (response.data.current.wind_speed_10m * 1000)/3600,
             windDirection: response.data.current.wind_direction_10m,
             isDay: response.data.current.is_day,
             cloudCover: response.data.current.cloud_cover,
